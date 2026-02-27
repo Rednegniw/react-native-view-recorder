@@ -1,1 +1,1 @@
-module.exports = require("./plugin/withImageSeqEncoder");
+module.exports = require("./plugin/withVideoEncoder");

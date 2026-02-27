@@ -38,8 +38,8 @@ def safeExtGet(prop, fallback) {
 }
 
 react {
-    libraryName = "RNImageSequenceEncoderSpec"
-    codegenJavaPackageName = "com.reactnativeimagesequenceencoder"
+    libraryName = "RNVideoEncoderSpec"
+    codegenJavaPackageName = "com.reactnativevideoencoder"
     jsRootDir = file("../src")
 }
 
@@ -71,7 +71,7 @@ android {
     kotlinOptions {
         jvmTarget = '17'
     }
-    namespace 'com.reactnativeimagesequenceencoder'
+    namespace 'com.reactnativevideoencoder'
 
     sourceSets {
         main {
