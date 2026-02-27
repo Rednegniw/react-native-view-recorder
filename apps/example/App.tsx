@@ -1,23 +1,43 @@
 import { Directory, File, Paths } from "expo-file-system";
+import { LinearGradient } from "expo-linear-gradient";
+import * as MediaLibrary from "expo-media-library";
 import { useVideoPlayer, VideoView } from "expo-video";
+import { NumberFlow } from "number-flow-react-native";
 import { forwardRef, useCallback, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Text, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { encode } from "react-native-video-encoder";
 import { captureRef } from "react-native-view-shot";
+import { RippleButton } from "./src/components/RippleButton";
 
 const FRAME_COUNT = 60;
-const FPS = 60;
+const FPS = 30;
 const WIDTH = 640;
 const HEIGHT = 480;
 
 type Status = "idle" | "generating" | "encoding" | "done" | "error";
+
+function hslToHex(h: number, s: number, l: number): string {
+  const sNorm = s / 100;
+  const lNorm = l / 100;
+  const a = sNorm * Math.min(lNorm, 1 - lNorm);
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    const color = lNorm - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color)
+      .toString(16)
+      .padStart(2, "0");
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
 
 export default function App() {
   const [status, setStatus] = useState<Status>("idle");
   const [videoUri, setVideoUri] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [currentFrame, setCurrentFrame] = useState(0);
+  const [saved, setSaved] = useState(false);
   const frameRef = useRef<View>(null);
 
   const player = useVideoPlayer(videoUri, (p) => {
@@ -30,19 +50,17 @@ export default function App() {
       setStatus("generating");
       setErrorMsg(null);
       setVideoUri(null);
+      setSaved(false);
 
       const framesDir = new Directory(Paths.cache, "frames");
       const outputFile = new File(Paths.cache, "output.mp4");
 
-      // Clean up previous runs
       if (framesDir.exists) framesDir.delete();
       if (outputFile.exists) outputFile.delete();
       framesDir.create();
 
-      // Capture frames from the hidden FrameCanvas component
       for (let i = 0; i < FRAME_COUNT; i++) {
         setCurrentFrame(i);
-        // Small delay to let React render the frame
         await new Promise((r) => setTimeout(r, 50));
 
         const uri = await captureRef(frameRef, {
@@ -57,7 +75,6 @@ export default function App() {
         captured.move(new File(framesDir, frameName));
       }
 
-      // Encode frames to MP4
       setStatus("encoding");
       const folderPath = `${framesDir.uri.replace("file://", "")}/`;
       const outputPath = outputFile.uri.replace("file://", "");
@@ -78,164 +95,164 @@ export default function App() {
     }
   }, []);
 
-  return (
-    <SafeAreaProvider>
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>React Native Video Encoder</Text>
-        <Text style={styles.subtitle}>PNG sequence to MP4, on-device</Text>
+  const saveToLibrary = useCallback(async () => {
+    if (!videoUri) return;
 
-        {/* Video player */}
-        {videoUri && status === "done" ? (
-          <View style={styles.videoContainer}>
-            <VideoView player={player} style={styles.video} contentFit="contain" />
-          </View>
-        ) : (
-          <View style={styles.placeholder}>
-            {status === "generating" ? (
-              <>
-                <ActivityIndicator size="large" color="#007AFF" />
-                <Text style={styles.statusText}>
-                  Generating frame {currentFrame + 1}/{FRAME_COUNT}...
+    const { status: permStatus } = await MediaLibrary.requestPermissionsAsync();
+    if (permStatus !== "granted") {
+      Alert.alert("Permission needed", "Camera roll access is required to save the video.");
+      return;
+    }
+
+    await MediaLibrary.saveToLibraryAsync(videoUri);
+    setSaved(true);
+  }, [videoUri]);
+
+  const isWorking = status === "generating" || status === "encoding";
+  const isRecording = status === "generating";
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <SafeAreaView
+          style={{
+            flex: 1,
+            backgroundColor: "#000",
+            justifyContent: "center",
+            alignItems: "center",
+            paddingHorizontal: 20,
+          }}
+        >
+          {/* Main display area */}
+          {videoUri && status === "done" ? (
+            <View
+              style={{
+                width: "100%",
+                aspectRatio: WIDTH / HEIGHT,
+                borderRadius: 16,
+                overflow: "hidden",
+                backgroundColor: "#111",
+              }}
+            >
+              <VideoView
+                player={player}
+                style={{ width: "100%", height: "100%" }}
+                contentFit="contain"
+              />
+            </View>
+          ) : isRecording ? (
+            <View style={{ width: "100%", alignItems: "center" }}>
+              {/* Live preview of frame being recorded */}
+              <View
+                style={{
+                  width: "100%",
+                  aspectRatio: WIDTH / HEIGHT,
+                  borderRadius: 16,
+                  overflow: "hidden",
+                  borderWidth: 2,
+                  borderColor: "#FF3B30",
+                }}
+              >
+                <FrameCanvas ref={frameRef} frameIndex={currentFrame} />
+              </View>
+
+              {/* Progress below the preview */}
+              <View style={{ marginTop: 16, alignItems: "center", gap: 6 }}>
+                <View style={{ flexDirection: "row", alignItems: "baseline" }}>
+                  <NumberFlow
+                    value={currentFrame + 1}
+                    style={{ color: "#fff", fontSize: 28, fontWeight: "700" }}
+                  />
+                  <Text style={{ color: "#555", fontSize: 28, fontWeight: "700" }}>
+                    {" "}
+                    / {FRAME_COUNT}
+                  </Text>
+                </View>
+                <Text style={{ color: "#666", fontSize: 13 }}>Capturing frames...</Text>
+              </View>
+            </View>
+          ) : (
+            <View
+              style={{
+                width: "100%",
+                aspectRatio: WIDTH / HEIGHT,
+                borderRadius: 16,
+                backgroundColor: "#111",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: 20,
+              }}
+            >
+              {status === "encoding" ? (
+                <>
+                  <ActivityIndicator size="large" color="#007AFF" />
+                  <Text style={{ color: "#aaa", fontSize: 14, marginTop: 12 }}>
+                    Encoding MP4...
+                  </Text>
+                </>
+              ) : status === "error" ? (
+                <Text style={{ color: "#ff4444", fontSize: 14, textAlign: "center" }}>
+                  {errorMsg}
                 </Text>
-              </>
-            ) : status === "encoding" ? (
-              <>
-                <ActivityIndicator size="large" color="#007AFF" />
-                <Text style={styles.statusText}>Encoding MP4...</Text>
-              </>
-            ) : status === "error" ? (
-              <Text style={styles.errorText}>{errorMsg}</Text>
-            ) : (
-              <Text style={styles.placeholderText}>
-                Tap the button below to generate {FRAME_COUNT} frames and encode them into an MP4
-              </Text>
+              ) : (
+                <Text style={{ color: "#444", fontSize: 14, textAlign: "center" }}>
+                  Generate {FRAME_COUNT} frames and encode to MP4
+                </Text>
+              )}
+            </View>
+          )}
+
+          {/* Action buttons */}
+          <View style={{ flexDirection: "row", gap: 12, marginTop: 24 }}>
+            <RippleButton
+              onPress={generateAndEncode}
+              label={status === "done" ? "Encode Again" : "Generate & Encode"}
+              disabled={isWorking}
+              variant="primary"
+            />
+
+            {status === "done" && (
+              <RippleButton
+                onPress={saveToLibrary}
+                label={saved ? "Saved!" : "Save"}
+                disabled={saved}
+                variant={saved ? "success" : "secondary"}
+              />
             )}
           </View>
-        )}
 
-        {/* Encode button */}
-        <Pressable
-          style={[
-            styles.button,
-            status === "generating" || status === "encoding" ? styles.buttonDisabled : null,
-          ]}
-          onPress={generateAndEncode}
-          disabled={status === "generating" || status === "encoding"}
-        >
-          <Text style={styles.buttonText}>
-            {status === "done" ? "Encode Again" : "Generate & Encode"}
-          </Text>
-        </Pressable>
-
-        {/* Hidden frame canvas for capturing */}
-        <View style={styles.offscreen} pointerEvents="none">
-          <FrameCanvas ref={frameRef} frameIndex={currentFrame} />
-        </View>
-      </SafeAreaView>
-    </SafeAreaProvider>
+          {/* Hidden frame canvas (only used when not recording, since recording shows it live) */}
+          {!isRecording && (
+            <View style={{ position: "absolute", left: -9999, top: -9999 }} pointerEvents="none">
+              <FrameCanvas ref={frameRef} frameIndex={currentFrame} />
+            </View>
+          )}
+        </SafeAreaView>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
 const FrameCanvas = forwardRef<View, { frameIndex: number }>(({ frameIndex }, ref) => {
-  const hue = (frameIndex / FRAME_COUNT) * 360;
-  const backgroundColor = `hsl(${hue}, 70%, 50%)`;
+  const progress = frameIndex / FRAME_COUNT;
+
+  const baseHue = 200 + progress * 120;
+  const topColor = hslToHex(baseHue, 40, 72);
+  const bottomColor = hslToHex(baseHue + 40, 45, 62);
 
   return (
-    <View ref={ref} style={[styles.frame, { backgroundColor }]} collapsable={false}>
-      <Text style={styles.frameNumber}>{frameIndex + 1}</Text>
-      <Text style={styles.frameLabel}>/ {FRAME_COUNT}</Text>
+    <View ref={ref} style={{ width: "100%", aspectRatio: WIDTH / HEIGHT }} collapsable={false}>
+      <LinearGradient
+        colors={[topColor, bottomColor]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+      >
+        <Text style={{ color: "#fff", fontSize: 120, fontWeight: "800" }}>{frameIndex + 1}</Text>
+        <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 32, fontWeight: "600" }}>
+          / {FRAME_COUNT}
+        </Text>
+      </LinearGradient>
     </View>
   );
-});
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#000",
-    alignItems: "center",
-    paddingHorizontal: 20,
-  },
-  title: {
-    color: "#fff",
-    fontSize: 24,
-    fontWeight: "700",
-    marginTop: 20,
-  },
-  subtitle: {
-    color: "#888",
-    fontSize: 14,
-    marginTop: 4,
-    marginBottom: 20,
-  },
-  videoContainer: {
-    width: "100%",
-    aspectRatio: WIDTH / HEIGHT,
-    borderRadius: 12,
-    overflow: "hidden",
-    backgroundColor: "#111",
-  },
-  video: {
-    width: "100%",
-    height: "100%",
-  },
-  placeholder: {
-    width: "100%",
-    aspectRatio: WIDTH / HEIGHT,
-    borderRadius: 12,
-    backgroundColor: "#111",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  placeholderText: {
-    color: "#666",
-    fontSize: 14,
-    textAlign: "center",
-  },
-  statusText: {
-    color: "#aaa",
-    fontSize: 14,
-    marginTop: 12,
-  },
-  errorText: {
-    color: "#ff4444",
-    fontSize: 14,
-    textAlign: "center",
-  },
-  button: {
-    marginTop: 20,
-    backgroundColor: "#007AFF",
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  offscreen: {
-    position: "absolute",
-    left: -9999,
-    top: -9999,
-  },
-  frame: {
-    width: WIDTH,
-    height: HEIGHT,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  frameNumber: {
-    color: "#fff",
-    fontSize: 120,
-    fontWeight: "800",
-  },
-  frameLabel: {
-    color: "rgba(255,255,255,0.6)",
-    fontSize: 32,
-    fontWeight: "600",
-  },
 });

@@ -4,7 +4,16 @@
     "slug": "video-encoder-example",
     "version": "1.0.0",
     "orientation": "portrait",
-    "plugins": ["react-native-video-encoder"],
+    "plugins": [
+      "react-native-video-encoder",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow $(PRODUCT_NAME) to save videos to your camera roll.",
+          "savePhotosPermission": "Allow $(PRODUCT_NAME) to save videos to your camera roll."
+        }
+      ]
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.rednegniw.videoencoder.example"
