@@ -158,17 +158,9 @@ export default function App() {
 
               {/* Progress below the preview */}
               <View style={{ marginTop: 16, alignItems: "center", gap: 6 }}>
-                <View style={{ flexDirection: "row", alignItems: "baseline" }}>
-                  <NumberFlow
-                    value={currentFrame + 1}
-                    style={{ color: "#fff", fontSize: 28, fontWeight: "700" }}
-                  />
-                  <Text style={{ color: "#555", fontSize: 28, fontWeight: "700" }}>
-                    {" "}
-                    / {FRAME_COUNT}
-                  </Text>
-                </View>
-                <Text style={{ color: "#666", fontSize: 13 }}>Capturing frames...</Text>
+                <Text style={{ color: "#aaa", fontSize: 14 }}>
+                  Capturing frame {currentFrame + 1} / {FRAME_COUNT}
+                </Text>
               </View>
             </View>
           ) : (
@@ -248,7 +240,10 @@ const FrameCanvas = forwardRef<View, { frameIndex: number }>(({ frameIndex }, re
         end={{ x: 1, y: 1 }}
         style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
       >
-        <Text style={{ color: "#fff", fontSize: 120, fontWeight: "800" }}>{frameIndex + 1}</Text>
+        <NumberFlow
+          value={frameIndex + 1}
+          style={{ color: "#fff", fontSize: 120, fontWeight: "800" }}
+        />
         <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 32, fontWeight: "600" }}>
           / {FRAME_COUNT}
         </Text>
