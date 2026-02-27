@@ -1,0 +1,26 @@
+{
+  "name": "example",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
+  },
+  "dependencies": {
+    "expo": "~55.0.3",
+    "expo-asset": "~55.0.2",
+    "expo-file-system": "~55.0.2",
+    "expo-video": "~55.0.2",
+    "react": "19.2.0",
+    "react-native": "0.83.2",
+    "react-native-safe-area-context": "^5.4.0",
+    "react-native-video-encoder": "workspace:*",
+    "react-native-view-shot": "^4.0.2"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.0",
+    "typescript": "~5.9.2"
+  },
+  "private": true
+}

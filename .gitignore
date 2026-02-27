@@ -1,0 +1,22 @@
+node_modules/
+dist/
+packages/*/lib/
+.DS_Store
+*.tsbuildinfo
+
+# Native build artifacts
+packages/*/android/build/
+
+# Tool configs
+.claude/
+
+# Temp screenshots
+/*.png
+/*.jpeg
+/*.jpg
+
+# Expo
+.expo/
+apps/example/.expo/
+apps/example/android/
+apps/example/ios/

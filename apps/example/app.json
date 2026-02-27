@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "Video Encoder Example",
+    "slug": "video-encoder-example",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "plugins": ["react-native-video-encoder"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.rednegniw.videoencoder.example"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.rednegniw.videoencoder.example"
+    }
+  }
+}

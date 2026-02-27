@@ -1,0 +1,25 @@
+{
+  "name": "react-native-video-encoder-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.0",
+    "@changesets/changelog-github": "^0.5.2",
+    "@changesets/cli": "^2.29.0",
+    "lefthook": "^2.1.1"
+  },
+  "scripts": {
+    "prepare": "lefthook install",
+    "lib": "bun --cwd packages/react-native-video-encoder",
+    "example": "bun --cwd apps/example",
+    "check-types": "bun --filter '*' check-types",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "build": "bun run lib prepare"
+  }
+}
