@@ -1,4 +1,4 @@
-package com.reactnativeimagesequenceencoder
+package com.reactnativevideoencoder
 
 import com.facebook.react.BaseReactPackage
 import com.facebook.react.bridge.NativeModule
@@ -9,13 +9,13 @@ import com.facebook.react.module.model.ReactModuleInfoProvider
 
 @ReactModuleList(
   nativeModules = [
-    ImageSequenceEncoderModule::class,
+    VideoEncoderModule::class,
   ]
 )
-class ImageSequenceEncoderPackage : BaseReactPackage() {
+class VideoEncoderPackage : BaseReactPackage() {
   override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? {
-    return if (name == ImageSequenceEncoderModule.NAME) {
-      ImageSequenceEncoderModule(reactContext)
+    return if (name == VideoEncoderModule.NAME) {
+      VideoEncoderModule(reactContext)
     } else {
       null
     }
@@ -25,9 +25,9 @@ class ImageSequenceEncoderPackage : BaseReactPackage() {
     return ReactModuleInfoProvider {
       val isTurboModule = BuildConfig.IS_NEW_ARCHITECTURE_ENABLED
       mapOf(
-        ImageSequenceEncoderModule.NAME to ReactModuleInfo(
-          ImageSequenceEncoderModule.NAME,
-          ImageSequenceEncoderModule.NAME,
+        VideoEncoderModule.NAME to ReactModuleInfo(
+          VideoEncoderModule.NAME,
+          VideoEncoderModule.NAME,
           false, // canOverrideExistingModule
           false, // needsEagerInit
           false, // hasConstants

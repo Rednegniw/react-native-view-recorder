@@ -31,11 +31,11 @@
   ],
   "sideEffects": false,
   "codegenConfig": {
-    "name": "RNImageSequenceEncoderSpec",
+    "name": "RNVideoEncoderSpec",
     "type": "modules",
     "jsSrcsDir": "./src",
     "android": {
-      "javaPackageName": "com.reactnativeimagesequenceencoder"
+      "javaPackageName": "com.reactnativevideoencoder"
     }
   },
   "repository": {
