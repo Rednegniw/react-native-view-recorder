@@ -11,7 +11,7 @@ import Animated, {
 
 interface RippleButtonProps {
   onPress: () => void;
-  label: string;
+  label?: string;
   style?: ViewStyle;
   disabled?: boolean;
   variant?: "primary" | "success" | "secondary";

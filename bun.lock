@@ -15,6 +15,7 @@
       "name": "example",
       "version": "1.0.0",
       "dependencies": {
+        "@rednegniw/masked-view": "^0.4.0",
         "expo": "~55.0.3",
         "expo-asset": "~55.0.2",
         "expo-file-system": "~55.0.2",
@@ -497,6 +498,8 @@
     "@react-native/normalize-colors": ["@react-native/normalize-colors@0.83.2", "", {}, "sha512-gkZAb9LoVVzNuYzzOviH7DiPTXQoZPHuiTH2+O2+VWNtOkiznjgvqpwYAhg58a5zfRq5GXlbBdf5mzRj5+3Y5Q=="],
 
     "@react-native/virtualized-lists": ["@react-native/virtualized-lists@0.83.2", "", { "dependencies": { "invariant": "^2.2.4", "nullthrows": "^1.1.1" }, "peerDependencies": { "@types/react": "^19.2.0", "react": "*", "react-native": "*" }, "optionalPeers": ["@types/react"] }, "sha512-N7mRjHLW/+KWxMp9IHRWyE3VIkeG1m3PnZJAGEFLCN8VFb7e4VfI567o7tE/HYcdcXCylw+Eqhlciz8gDeQ71g=="],
+
+    "@rednegniw/masked-view": ["@rednegniw/masked-view@0.4.0", "", { "peerDependencies": { "react": ">=18", "react-native": ">=0.71" } }, "sha512-POpL9XSVq87Af0RpRVvCv7h3iaCh0RHlmpcg5vRzLcGruOAc7vCYKHzsQylsclnFWAH09DA2rCfUphhk2sb67w=="],
 
     "@sinclair/typebox": ["@sinclair/typebox@0.27.10", "", {}, "sha512-MTBk/3jGLNB2tVxv6uLlFh1iu64iYOQ2PbdOSK3NW8JZsmlaOh2q6sdtKowBhfw8QFLmYNzTW4/oK4uATIi6ZA=="],
 
