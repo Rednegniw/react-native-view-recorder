@@ -16,7 +16,7 @@
  *   });
  */
 
-import { NativeEventEmitter, Platform } from "react-native";
+import { NativeEventEmitter, type NativeModule, Platform } from "react-native";
 import NativeVideoEncoder from "./NativeVideoEncoder";
 
 const LINKING_ERROR =
@@ -111,7 +111,7 @@ export async function encode(options: EncoderOptions): Promise<string> {
   let subscription: { remove(): void } | undefined;
   if (onProgress) {
     const emitter = new NativeEventEmitter(
-      Platform.OS === "ios" ? (NativeVideoEncoder as any) : undefined,
+      Platform.OS === "ios" ? (NativeVideoEncoder as unknown as NativeModule) : undefined,
     );
     subscription = emitter.addListener("onEncodeProgress", onProgress);
   }
