@@ -21,8 +21,7 @@ import { SkiaRecordingView, useSkiaViewRecorder } from "react-native-view-record
 | Prop | Type | Required | Description |
 |------|------|----------|-------------|
 | `sessionId` | `string` | Yes | Session identifier from `useSkiaViewRecorder()` |
-
-It also accepts a `ref` (forwardRef component) which is used internally by the recorder to get the native view tag for Skia frame capture.
+| `viewRef` | `React.RefObject` | Yes | Ref from `useSkiaViewRecorder()`. Used to locate the native view for Skia frame capture. |
 
 ### Example
 
@@ -35,7 +34,7 @@ function SkiaRecorder() {
 
   return (
     <SkiaRecordingView
-      ref={recorder.skiaViewRef}
+      viewRef={recorder.viewRef}
       sessionId={recorder.sessionId}
       style={{ width: 640, height: 480 }}
     >
@@ -47,10 +46,6 @@ function SkiaRecorder() {
 }
 ```
 
-<Callout type="info">
-Always pass `recorder.skiaViewRef` as the `ref` prop. This allows the recorder to locate the native view for Skia-specific frame capture (`captureSkiaFrame`). Without it, the recorder falls back to the standard `captureFrame` path.
-</Callout>
-
 ## useSkiaViewRecorder
 
 Hook that creates a Skia view recorder session. Uses `captureSkiaFrame` for Skia content.
@@ -59,7 +54,7 @@ Hook that creates a Skia view recorder session. Uses `captureSkiaFrame` for Skia
 
 ```tsx
 function useSkiaViewRecorder(): ViewRecorder & {
-  skiaViewRef: React.RefObject<RecordingViewRef | null>;
+  viewRef: React.RefObject<RecordingViewRef | null>;
 }
 ```
 
@@ -69,7 +64,7 @@ function useSkiaViewRecorder(): ViewRecorder & {
 |----------|------|-------------|
 | `sessionId` | `string` | Unique session ID |
 | `record` | `(options: RecordOptions) => Promise<string>` | Starts recording |
-| `skiaViewRef` | `React.RefObject` | Ref to pass to `<SkiaRecordingView>` |
+| `viewRef` | `React.RefObject` | Pass as the `viewRef` prop on `<SkiaRecordingView>` |
 
 ### Usage
 
@@ -77,7 +72,7 @@ function useSkiaViewRecorder(): ViewRecorder & {
 const recorder = useSkiaViewRecorder();
 
 <SkiaRecordingView
-  ref={recorder.skiaViewRef}
+  viewRef={recorder.viewRef}
   sessionId={recorder.sessionId}
 >
   <Canvas style={{ flex: 1 }}>
