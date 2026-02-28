@@ -14,7 +14,7 @@ private const val EGL_RECORDABLE_ANDROID = 0x3142
 internal class EglWrapper(
   private val surface: Surface,
   private val width: Int,
-  private val height: Int
+  private val height: Int,
 ) {
   private var eglDisplay: EGLDisplay = EGL14.EGL_NO_DISPLAY
   private var eglContext: EGLContext = EGL14.EGL_NO_CONTEXT
@@ -28,7 +28,8 @@ internal class EglWrapper(
 
   private var released = false
 
-  private val vertexShaderCode = """
+  private val vertexShaderCode =
+    """
     attribute vec4 aPosition;
     attribute vec2 aTexCoord;
     varying vec2 vTexCoord;
@@ -36,24 +37,38 @@ internal class EglWrapper(
       gl_Position = aPosition;
       vTexCoord = aTexCoord;
     }
-  """.trimIndent()
+    """.trimIndent()
 
-  private val fragmentShaderCode = """
+  private val fragmentShaderCode =
+    """
     precision mediump float;
     varying vec2 vTexCoord;
     uniform sampler2D uTexture;
     void main() {
       gl_FragColor = texture2D(uTexture, vTexCoord);
     }
-  """.trimIndent()
+    """.trimIndent()
 
-  private val quadVertices = floatArrayOf(
-    // Position    // TexCoord
-    -1f, -1f,      0f, 1f,
-     1f, -1f,      1f, 1f,
-    -1f,  1f,      0f, 0f,
-     1f,  1f,      1f, 0f
-  )
+  private val quadVertices =
+    floatArrayOf(
+      // Position    // TexCoord
+      -1f,
+      -1f,
+      0f,
+      1f,
+      1f,
+      -1f,
+      1f,
+      1f,
+      -1f,
+      1f,
+      0f,
+      0f,
+      1f,
+      1f,
+      1f,
+      0f,
+    )
 
   private val vertexBuffer: FloatBuffer
 
@@ -67,15 +82,22 @@ internal class EglWrapper(
     }
 
     // EGL config
-    val attrib = intArrayOf(
-      EGL14.EGL_RED_SIZE, 8,
-      EGL14.EGL_GREEN_SIZE, 8,
-      EGL14.EGL_BLUE_SIZE, 8,
-      EGL14.EGL_ALPHA_SIZE, 8,
-      EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT,
-      EGL_RECORDABLE_ANDROID, 1,
-      EGL14.EGL_NONE
-    )
+    val attrib =
+      intArrayOf(
+        EGL14.EGL_RED_SIZE,
+        8,
+        EGL14.EGL_GREEN_SIZE,
+        8,
+        EGL14.EGL_BLUE_SIZE,
+        8,
+        EGL14.EGL_ALPHA_SIZE,
+        8,
+        EGL14.EGL_RENDERABLE_TYPE,
+        EGL14.EGL_OPENGL_ES2_BIT,
+        EGL_RECORDABLE_ANDROID,
+        1,
+        EGL14.EGL_NONE,
+      )
     val configs = arrayOfNulls<EGLConfig>(1)
     val num = IntArray(1)
 
@@ -99,10 +121,12 @@ internal class EglWrapper(
     initShaderProgram()
 
     // Vertex buffer
-    vertexBuffer = ByteBuffer.allocateDirect(quadVertices.size * 4)
-      .order(ByteOrder.nativeOrder())
-      .asFloatBuffer()
-      .put(quadVertices)
+    vertexBuffer =
+      ByteBuffer
+        .allocateDirect(quadVertices.size * 4)
+        .order(ByteOrder.nativeOrder())
+        .asFloatBuffer()
+        .put(quadVertices)
     vertexBuffer.position(0)
 
     // Create a single reusable texture
@@ -116,7 +140,10 @@ internal class EglWrapper(
     GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
   }
 
-  private fun loadShader(type: Int, shaderCode: String): Int {
+  private fun loadShader(
+    type: Int,
+    shaderCode: String,
+  ): Int {
     val shader = GLES20.glCreateShader(type)
     GLES20.glShaderSource(shader, shaderCode)
     GLES20.glCompileShader(shader)
@@ -178,8 +205,7 @@ internal class EglWrapper(
     GLES20.glDisableVertexAttribArray(texCoordHandle)
   }
 
-  fun setPresentationTime(nanos: Long) =
-    EGLExt.eglPresentationTimeANDROID(eglDisplay, eglSurface, nanos)
+  fun setPresentationTime(nanos: Long) = EGLExt.eglPresentationTimeANDROID(eglDisplay, eglSurface, nanos)
 
   fun swapBuffers() = EGL14.eglSwapBuffers(eglDisplay, eglSurface)
 

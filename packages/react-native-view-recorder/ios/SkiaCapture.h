@@ -2,8 +2,8 @@
 // Renders Skia content directly into a CVPixelBuffer via Metal,
 // bypassing drawHierarchy which cannot capture CAMetalLayer content.
 
-#import <Foundation/Foundation.h>
 #import <CoreVideo/CoreVideo.h>
+#import <Foundation/Foundation.h>
 
 @interface SkiaCapture : NSObject
 
@@ -21,8 +21,8 @@
  */
 + (BOOL)renderSkiaView:(UIView *)skiaUIView
          toPixelBuffer:(CVPixelBufferRef)pixelBuffer
-                  width:(int)width
-                 height:(int)height
-                  error:(NSError **)error;
+                 width:(int)width
+                height:(int)height
+                 error:(NSError **)error;
 
 @end

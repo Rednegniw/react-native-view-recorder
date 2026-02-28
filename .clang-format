@@ -1,0 +1,6 @@
+BasedOnStyle: LLVM
+IndentWidth: 2
+ColumnLimit: 120
+ObjCBlockIndentWidth: 2
+ObjCSpaceAfterProperty: true
+AllowShortFunctionsOnASingleLine: Empty
