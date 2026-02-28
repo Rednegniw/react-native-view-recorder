@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in contributing to React Native Video Encoder!
+Thanks for your interest in contributing to React Native View Recorder!
 
 ## Development Workflow
 
@@ -13,7 +13,7 @@ This is a Bun workspaces monorepo. To get started:
 ### Project Structure
 
 ```
-packages/react-native-video-encoder/   # The publishable library
+packages/react-native-view-recorder/   # The publishable library
 apps/example/                          # Expo example app
 ```
 
@@ -61,7 +61,7 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ## Reporting Issues
 
-Found a bug or have a feature request? [Open an issue](https://github.com/Rednegniw/react-native-video-encoder/issues) with as much detail as possible.
+Found a bug or have a feature request? [Open an issue](https://github.com/Rednegniw/react-native-view-recorder/issues) with as much detail as possible.
 
 For bugs, include:
 - React Native version

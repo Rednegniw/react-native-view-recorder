@@ -1,35 +1,36 @@
-<h1 align="center">React Native Video Encoder</h1>
+<h1 align="center">React Native View Recorder</h1>
 
 <p align="center">
-  On-device PNG-to-MP4 encoder for React Native and Expo. No FFmpeg, no GPL.
+  Record any React Native view to MP4 video. No FFmpeg, no GPL.
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/react-native-video-encoder"><img src="https://img.shields.io/npm/v/react-native-video-encoder.svg" alt="npm version" /></a>
-  <a href="https://www.npmjs.com/package/react-native-video-encoder"><img src="https://img.shields.io/npm/dm/react-native-video-encoder.svg" alt="npm downloads" /></a>
-  <a href="https://github.com/Rednegniw/react-native-video-encoder/actions/workflows/ci.yml"><img src="https://github.com/Rednegniw/react-native-video-encoder/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://www.npmjs.com/package/react-native-view-recorder"><img src="https://img.shields.io/npm/v/react-native-view-recorder.svg" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/react-native-view-recorder"><img src="https://img.shields.io/npm/dm/react-native-view-recorder.svg" alt="npm downloads" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License" /></a>
 </p>
 
 ## Features
 
-- **Offline** - runs entirely on the device, no network upload required
+- **View-level capture** - record a specific view, not the entire screen
+- **Works with Skia** - captures `@shopify/react-native-skia` canvases, TextureViews, and more
+- **Zero disk I/O** - frames go directly from native view capture to the hardware encoder
+- **Hardware-accelerated** - AVAssetWriter (iOS) and MediaCodec (Android)
+- **HEVC support** - H.264 and H.265 codecs, including HEVC with alpha (iOS)
 - **Tiny footprint** - ~150 KB of native code, zero third-party binaries
 - **MIT licensed** - no GPL/LGPL concerns (unlike FFmpeg-based solutions)
 - **Expo-friendly** - ships with a config plugin, just add to `app.json`
-- **New Architecture** - TurboModule support out of the box
-- **Cross-platform** - iOS (AVAssetWriter) and Android (MediaCodec + EGL)
+- **New Architecture** - Fabric native component + TurboModule
 
 ## Installation
 
 ```bash
 # Expo
-npx expo install react-native-video-encoder
+npx expo install react-native-view-recorder
 
 # npm / bun
-npm install react-native-video-encoder
-# or
-bun add react-native-video-encoder
+npm install react-native-view-recorder
+bun add react-native-view-recorder
 ```
 
 ### Expo setup
@@ -39,7 +40,7 @@ Add the plugin to your `app.json`:
 ```json
 {
   "expo": {
-    "plugins": ["react-native-video-encoder"]
+    "plugins": ["react-native-view-recorder"]
   }
 }
 ```
@@ -48,70 +49,83 @@ Then rebuild your dev client:
 
 ```bash
 npx expo run:ios
-# or
 npx expo run:android
 ```
 
-> **Note:** Expo Go does not include custom native modules. You need a development build.
-
-### Bare React Native
-
-iOS:
-```bash
-cd ios && pod install
-```
-
-Android autolinking handles setup automatically.
+> Expo Go does not include custom native modules. You need a development build.
 
 ## Quick Start
 
-```ts
-import { encode } from "react-native-video-encoder";
-import * as FileSystem from "expo-file-system";
+```tsx
+import { RecordingView, useViewRecorder } from "react-native-view-recorder";
 
-// Assuming you have frames at /cache/frames/frame_00000.png, frame_00001.png, ...
-const uri = await encode({
-  folder: FileSystem.cacheDirectory + "frames/",
-  fps: 60,
-  width: 1280,
-  height: 720,
-  output: FileSystem.cacheDirectory + "video.mp4",
-});
+function App() {
+  const recorder = useViewRecorder();
+  const [frame, setFrame] = useState(0);
 
-console.log("MP4 saved at", uri);
+  const record = async () => {
+    const videoUri = await recorder.record({
+      output: FileSystem.cacheDirectory + "video.mp4",
+      fps: 30,
+      totalFrames: 150,
+      onFrame: async ({ frameIndex }) => setFrame(frameIndex),
+      onProgress: ({ framesEncoded, totalFrames }) => {
+        console.log(`${framesEncoded}/${totalFrames}`);
+      },
+    });
+    console.log("Saved:", videoUri);
+  };
+
+  return (
+    <RecordingView sessionId={recorder.sessionId} style={{ width: 640, height: 480 }}>
+      <MyContent frame={frame} />
+    </RecordingView>
+  );
+}
 ```
 
 ## API
 
-### `encode(options): Promise<string>`
+### `useViewRecorder()`
 
-Encodes a directory of sequential PNG frames into an H.264 MP4 video.
+Hook that returns a `ViewRecorder` handle with:
 
-| Option   | Type     | Description                                                  |
-| -------- | -------- | ------------------------------------------------------------ |
-| `folder` | `string` | Directory containing PNG frames. Must end with `/`.          |
-| `fps`    | `number` | Frames per second in the output video.                       |
-| `width`  | `number` | Output width in pixels. Must be even.                        |
-| `height` | `number` | Output height in pixels. Must be even.                       |
-| `output` | `string` | Absolute file path for the output MP4 (overwritten if exists). |
+- `sessionId` - pass this to `<RecordingView>`
+- `record(options)` - records all frames and returns the output path
 
-Returns the absolute file path of the saved MP4.
+### `<RecordingView>`
 
-## Troubleshooting
+Native container component. Wrap the content you want to record. Accepts all `View` props plus a required `sessionId` string.
 
-| Problem                                    | Fix                                                                |
-| ------------------------------------------ | ------------------------------------------------------------------ |
-| **Native module not linked**               | Rebuild your dev client (`npx expo run:ios` / `run:android`).      |
-| **`INFO_OUTPUT_FORMAT_CHANGED` (Android)** | Use even dimensions (e.g. 1280x720). Some encoders reject odd sizes. |
+### `RecordOptions`
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `output` | `string` | required | Absolute path for the output MP4 |
+| `fps` | `number` | required | Frames per second |
+| `totalFrames` | `number` | required | Total frames to capture |
+| `onFrame` | `(info) => void` | - | Called before each frame. Update view content here. |
+| `onProgress` | `(info) => void` | - | Called after each frame is encoded |
+| `width` | `number` | view width | Output width in pixels |
+| `height` | `number` | view height | Output height in pixels |
+| `codec` | `"h264" \| "hevc" \| "hevcWithAlpha"` | `"hevc"` | Video codec |
+| `bitrate` | `number` | auto | Target bitrate in bits/second |
+| `quality` | `number` | - | 0.0 (smallest) to 1.0 (best) |
+| `keyFrameInterval` | `number` | 2 | Seconds between keyframes |
+| `optimizeForNetwork` | `boolean` | true | Move moov atom to front |
+
+## How it works
+
+1. You wrap your content in `<RecordingView>` and call `recorder.record()`
+2. The library calls your `onFrame` callback, waits for React to render, then captures the native view
+3. On iOS, `drawHierarchy` renders directly into a CVPixelBuffer backed by AVAssetWriter
+4. On Android, `PixelCopy` captures from the window compositor into a bitmap, uploaded to MediaCodec via EGL
+5. When all frames are captured, the encoder finalizes the MP4
 
 ## Platform Details
 
-- **iOS**: Uses `AVAssetWriter` with H.264 codec (AVFoundation). Minimum iOS 13.0.
-- **Android**: Uses `MediaCodec` with EGL/OpenGL ES 2.0 for bitmap-to-surface rendering. Minimum SDK 21.
-
-## Attribution
-
-Originally based on work by [Elliot Fleming](https://github.com/elliotfleming).
+- **iOS**: AVAssetWriter with H.264/HEVC/HEVC-with-alpha. `drawHierarchy` for view capture. Minimum iOS 13.0.
+- **Android**: MediaCodec with EGL/OpenGL ES 2.0. `PixelCopy` for view capture (captures Skia/TextureView). Minimum SDK 26.
 
 ## Contributing
 
