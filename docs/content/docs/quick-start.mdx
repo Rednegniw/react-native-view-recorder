@@ -1,0 +1,70 @@
+---
+title: Quick Start
+description: Record your first view to MP4 in under 5 minutes
+full: true
+---
+
+<Steps>
+<Step>
+### Import the hook and component
+
+```tsx
+import { RecordingView, useViewRecorder } from "react-native-view-recorder";
+```
+</Step>
+<Step>
+### Set up the recorder
+
+```tsx
+import { useState } from "react";
+import { Button, View } from "react-native";
+import * as FileSystem from "expo-file-system";
+import { RecordingView, useViewRecorder } from "react-native-view-recorder";
+
+function App() {
+  const recorder = useViewRecorder();
+  const [frame, setFrame] = useState(0);
+
+  const handleRecord = async () => {
+    const videoUri = await recorder.record({
+      output: FileSystem.cacheDirectory + "video.mp4",
+      fps: 30,
+      totalFrames: 150,
+      onFrame: async ({ frameIndex }) => setFrame(frameIndex),
+      onProgress: ({ framesEncoded, totalFrames }) => {
+        console.log(`${framesEncoded}/${totalFrames}`);
+      },
+    });
+    console.log("Saved:", videoUri);
+  };
+
+  return (
+    <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+      <RecordingView
+        sessionId={recorder.sessionId}
+        style={{ width: 640, height: 480 }}
+      >
+        <MyContent frame={frame} />
+      </RecordingView>
+      <Button title="Record" onPress={handleRecord} />
+    </View>
+  );
+}
+```
+</Step>
+<Step>
+### Understand the flow
+
+1. `useViewRecorder()` creates a session and returns a `sessionId` and `record` function
+2. Pass `sessionId` to `<RecordingView>` to link the view to the recorder
+3. Call `recorder.record()` with your options
+4. For each frame, the library calls your `onFrame` callback, waits for React to re-render, captures the native view, and encodes it
+5. When all frames are captured, the promise resolves with the output file path
+</Step>
+</Steps>
+
+## Next steps
+
+- [RecordingView API reference](/docs/api/recording-view) for all component props
+- [RecordOptions reference](/docs/api/record-options) for encoding configuration
+- [Skia Recording](/docs/api/skia-recording-view) for capturing Skia canvases

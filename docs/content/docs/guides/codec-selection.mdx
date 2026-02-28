@@ -1,0 +1,54 @@
+---
+title: Codec Selection
+description: Choosing the right codec and bitrate for your use case
+full: true
+---
+
+## Codecs
+
+### H.264 (AVC)
+
+The most widely compatible video codec. Every modern device, browser, and video player supports H.264.
+
+**When to use**: maximum compatibility, sharing videos to platforms that may not support HEVC.
+
+### HEVC (H.265)
+
+Better compression than H.264 at the same visual quality (typically 25-50% smaller files). Default codec.
+
+**When to use**: general purpose recording where file size matters. All iOS devices since iPhone 6s and most modern Android devices support HEVC hardware encoding. On Android, if no hardware HEVC encoder is available, the library automatically falls back to H.264.
+
+### HEVC with Alpha
+
+HEVC encoding that preserves an alpha channel for transparent video. iOS only (iOS 13+).
+
+**When to use**: recording UI elements or animations that need to be composited over other content, such as overlays for video editing.
+
+<Callout type="warn">
+`"hevcWithAlpha"` is only available on iOS. On Android, this option will fail. Use `"hevc"` or `"h264"` instead.
+</Callout>
+
+## Bitrate
+
+By default, the library auto-scales the bitrate based on the output resolution and frame rate. You can override this with the `bitrate` option (in bits per second).
+
+### Guidelines
+
+| Resolution | Frame rate | Suggested bitrate |
+|-----------|-----------|-------------------|
+| 640x480 | 30 fps | 2-4 Mbps |
+| 1080x1920 | 30 fps | 6-10 Mbps |
+| 1080x1920 | 60 fps | 10-15 Mbps |
+
+Higher bitrates produce better quality but larger files. For HEVC, you can typically use 60-75% of the equivalent H.264 bitrate.
+
+## Quality hint
+
+The `quality` option (0.0 to 1.0) provides a quality hint to the encoder via `kVTCompressionPropertyKey_Quality` on iOS. When both `bitrate` and `quality` are specified, both are applied as separate encoder properties: `bitrate` sets the average target rate, while `quality` influences the encoder's rate-distortion tradeoff independently.
+
+## Key frame interval
+
+The `keyFrameInterval` option controls the distance between keyframes (I-frames) in seconds. Default is 2 seconds.
+
+- **Shorter intervals** (0.5-1s): faster seeking, slightly larger files. Good for video editing.
+- **Longer intervals** (2-4s): smaller files, slower seeking. Good for playback-only content.

@@ -1,0 +1,85 @@
+---
+title: RecordOptions
+description: Full reference for recording configuration options
+full: true
+---
+
+`RecordOptions` is the configuration object passed to `recorder.record()`. It controls the output file, encoding parameters, and frame callbacks.
+
+## Required options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `output` | `string` | Absolute path for the output MP4 file |
+| `fps` | `number` | Frames per second |
+| `totalFrames` | `number` | Total number of frames to capture |
+
+## Callbacks
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `onFrame` | `(info: FrameInfo) => void \| Promise<void>` | Called before each frame is captured. Use this to update the RecordingView's content for the next frame. The library waits for the returned promise before capturing. |
+| `onProgress` | `(info: RecordProgress) => void` | Called after each frame is captured and encoded. Use this for progress indicators. |
+
+### FrameInfo
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `frameIndex` | `number` | Current frame index (0-based) |
+| `totalFrames` | `number` | Total frames to capture |
+
+### RecordProgress
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `framesEncoded` | `number` | Number of frames encoded so far |
+| `totalFrames` | `number` | Total frames to capture |
+
+## Encoding options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `width` | `number` | View's pixel width | Output video width in pixels |
+| `height` | `number` | View's pixel height | Output video height in pixels |
+| `codec` | `VideoCodec` | `"hevc"` | Video codec to use |
+| `bitrate` | `number` | Auto-scaled by resolution | Target bitrate in bits/second |
+| `quality` | `number` | - | Encoding quality hint, 0.0 (smallest file) to 1.0 (best quality) |
+| `keyFrameInterval` | `number` | `2` | Seconds between keyframes |
+| `optimizeForNetwork` | `boolean` | `true` | Move the moov atom to the front of the file for progressive playback |
+
+### VideoCodec
+
+```tsx
+type VideoCodec = "h264" | "hevc" | "hevcWithAlpha";
+```
+
+| Value | Description |
+|-------|-------------|
+| `"h264"` | H.264/AVC. Widest compatibility. |
+| `"hevc"` | H.265/HEVC. Better compression at the same quality. Default. On Android, if the device lacks a hardware HEVC encoder, the library silently falls back to H.264. |
+| `"hevcWithAlpha"` | HEVC with alpha channel support. iOS only. |
+
+## Full example
+
+```tsx
+const outputPath = await recorder.record({
+  output: FileSystem.cacheDirectory + "recording.mp4",
+  fps: 60,
+  totalFrames: 300,
+  width: 1080,
+  height: 1920,
+  codec: "hevc",
+  bitrate: 8_000_000,
+  quality: 0.9,
+  keyFrameInterval: 1,
+  optimizeForNetwork: true,
+
+  onFrame: async ({ frameIndex, totalFrames }) => {
+    setAnimationProgress(frameIndex / totalFrames);
+  },
+
+  onProgress: ({ framesEncoded, totalFrames }) => {
+    setProgress(Math.round((framesEncoded / totalFrames) * 100));
+  },
+});
+```

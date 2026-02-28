@@ -1,0 +1,12 @@
+{
+  "title": "Docs",
+  "pages": [
+    "index",
+    "getting-started",
+    "quick-start",
+    "---API Reference---",
+    "api",
+    "---Guides---",
+    "guides"
+  ]
+}

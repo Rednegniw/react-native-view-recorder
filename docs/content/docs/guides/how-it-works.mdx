@@ -1,0 +1,61 @@
+---
+title: How It Works
+description: Platform-specific internals of view capture and video encoding
+full: true
+---
+
+## Recording loop
+
+When you call `recorder.record()`, the library runs the following loop for each frame:
+
+1. Calls your `onFrame` callback with the current frame index
+2. Waits for the callback's returned promise (if any) to resolve
+3. Waits one `requestAnimationFrame` to ensure React has rendered
+4. Captures the native view to a pixel buffer
+5. Encodes the pixel buffer into the video stream
+6. Calls your `onProgress` callback
+
+After all frames are captured, the encoder finalizes the MP4 container and returns the output path.
+
+## iOS
+
+### Standard view capture
+
+`drawHierarchy(in:afterScreenUpdates:)` renders the view hierarchy into a bitmap context. The bitmap is then copied into a `CVPixelBuffer` and appended to `AVAssetWriter` for encoding.
+
+<Callout type="info">
+`drawHierarchy` cannot capture `CAMetalLayer` content (used by Skia). For Skia views, the library uses a separate Metal capture pipeline. See [SkiaRecordingView](/docs/api/skia-recording-view) for details.
+</Callout>
+
+### Skia view capture
+
+For `@shopify/react-native-skia` content, iOS uses a zero-copy Metal pipeline. A `CVPixelBuffer` is created with an `IOSurface`-backed Metal texture, and Skia renders directly into it via `SkSurfaces::WrapBackendTexture`. This bypasses `drawHierarchy` entirely and avoids any bitmap copy.
+
+### Video encoding
+
+`AVAssetWriter` with `AVAssetWriterInput` configured for H.264 or HEVC. Pixel buffers (from either capture path) are appended to the asset writer's input.
+
+### Supported codecs
+
+- H.264 (AVC)
+- HEVC (H.265)
+- HEVC with Alpha (for transparent video, iOS 13+)
+
+## Android
+
+### View capture
+
+`PixelCopy.request()` captures from the window compositor. This works with any view type, including TextureView (used by Skia) and SurfaceView.
+
+### Video encoding
+
+`MediaCodec` configured as a hardware encoder, with an EGL surface as input. Captured bitmaps are uploaded to the MediaCodec surface via OpenGL ES 2.0, then encoded in hardware.
+
+### Supported codecs
+
+- H.264 (AVC)
+- HEVC (H.265), if supported by device hardware (the library auto-detects this and falls back to H.264 when no hardware HEVC encoder is available)
+
+## MP4 container
+
+The library writes a standard MP4 container. When `optimizeForNetwork` is enabled (the default), the moov atom is moved to the front of the file after encoding completes. This allows progressive playback without downloading the entire file.

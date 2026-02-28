@@ -1,0 +1,94 @@
+---
+title: SkiaRecordingView
+description: Recording component and hook for Skia canvas content
+full: true
+---
+
+## SkiaRecordingView
+
+`SkiaRecordingView` is a recording container for `@shopify/react-native-skia` canvases. On iOS, it uses a zero-copy Metal pipeline that renders Skia directly into the encoder's pixel buffers. This is necessary because `drawHierarchy` (used by `RecordingView`) cannot capture `CAMetalLayer` content. On Android, it delegates to the standard PixelCopy capture path, which captures all view types including Skia.
+
+### Import
+
+```tsx
+import { SkiaRecordingView, useSkiaViewRecorder } from "react-native-view-recorder";
+```
+
+### Props
+
+`SkiaRecordingView` accepts all standard `View` props plus:
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `sessionId` | `string` | Yes | Session identifier from `useSkiaViewRecorder()` |
+
+It also accepts a `ref` (forwardRef component) which is used internally by the recorder to get the native view tag for Skia frame capture.
+
+### Example
+
+```tsx
+import { Canvas, Circle } from "@shopify/react-native-skia";
+import { SkiaRecordingView, useSkiaViewRecorder } from "react-native-view-recorder";
+
+function SkiaRecorder() {
+  const recorder = useSkiaViewRecorder();
+
+  return (
+    <SkiaRecordingView
+      ref={recorder.skiaViewRef}
+      sessionId={recorder.sessionId}
+      style={{ width: 640, height: 480 }}
+    >
+      <Canvas style={{ flex: 1 }}>
+        <Circle cx={100} cy={100} r={50} color="red" />
+      </Canvas>
+    </SkiaRecordingView>
+  );
+}
+```
+
+<Callout type="info">
+Always pass `recorder.skiaViewRef` as the `ref` prop. This allows the recorder to locate the native view for Skia-specific frame capture (`captureSkiaFrame`). Without it, the recorder falls back to the standard `captureFrame` path.
+</Callout>
+
+## useSkiaViewRecorder
+
+Hook that creates a Skia view recorder session. Uses `captureSkiaFrame` for Skia content.
+
+### Signature
+
+```tsx
+function useSkiaViewRecorder(): ViewRecorder & {
+  skiaViewRef: React.RefObject<RecordingViewRef | null>;
+}
+```
+
+### Returns
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `sessionId` | `string` | Unique session ID |
+| `record` | `(options: RecordOptions) => Promise<string>` | Starts recording |
+| `skiaViewRef` | `React.RefObject` | Ref to pass to `<SkiaRecordingView>` |
+
+### Usage
+
+```tsx
+const recorder = useSkiaViewRecorder();
+
+<SkiaRecordingView
+  ref={recorder.skiaViewRef}
+  sessionId={recorder.sessionId}
+>
+  <Canvas style={{ flex: 1 }}>
+    {/* Skia content */}
+  </Canvas>
+</SkiaRecordingView>
+
+const path = await recorder.record({
+  output: "/path/to/skia-output.mp4",
+  fps: 60,
+  totalFrames: 180,
+  onFrame: async ({ frameIndex }) => updateAnimation(frameIndex),
+});
+```
