@@ -102,7 +102,7 @@ export const SkiaCanvasDemo = () => {
         }
       >
         <SkiaRecordingView
-          ref={recorder.skiaViewRef}
+          viewRef={recorder.viewRef}
           sessionId={recorder.sessionId}
           style={{ width: "100%", aspectRatio: WIDTH / HEIGHT }}
           pointerEvents={isRecording ? "auto" : "none"}

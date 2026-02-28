@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useMemo, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { findNodeHandle, type ViewProps } from "react-native";
 
 import NativeViewRecorder from "./NativeViewRecorder";
@@ -13,6 +13,7 @@ type RecordingViewRef = React.ElementRef<typeof NativeRecordingView>;
 
 interface SkiaRecordingViewProps extends ViewProps {
   sessionId: string;
+  viewRef: React.RefObject<RecordingViewRef | null>;
 }
 
 /**
@@ -24,13 +25,19 @@ interface SkiaRecordingViewProps extends ViewProps {
  * encoder's pixel buffers. On Android, delegates to the standard PixelCopy
  * capture path which already captures Skia content.
  */
-export const SkiaRecordingView = forwardRef<RecordingViewRef, SkiaRecordingViewProps>(
-  ({ sessionId, children, style, ...props }, ref) => (
-    <NativeRecordingView ref={ref} sessionId={sessionId} {...props} style={style}>
+export function SkiaRecordingView({
+  sessionId,
+  viewRef,
+  children,
+  style,
+  ...props
+}: SkiaRecordingViewProps) {
+  return (
+    <NativeRecordingView ref={viewRef} sessionId={sessionId} {...props} style={style}>
       {children}
     </NativeRecordingView>
-  ),
-);
+  );
+}
 
 // ── Hook ───────────────────────────────────────────────────────────
 
@@ -44,7 +51,7 @@ let nextId = 0;
  * ```tsx
  * const recorder = useSkiaViewRecorder();
  *
- * <SkiaRecordingView sessionId={recorder.sessionId}>
+ * <SkiaRecordingView viewRef={recorder.viewRef} sessionId={recorder.sessionId}>
  *   <Canvas style={{ flex: 1 }}>
  *     <Circle cx={100} cy={100} r={50} color="red" />
  *   </Canvas>
@@ -54,11 +61,11 @@ let nextId = 0;
  * ```
  */
 export function useSkiaViewRecorder(): ViewRecorder & {
-  skiaViewRef: React.RefObject<RecordingViewRef | null>;
+  viewRef: React.RefObject<RecordingViewRef | null>;
 } {
   const sessionIdRef = useRef<string>(`vr_${++nextId}_${Date.now()}`);
   const isRecordingRef = useRef(false);
-  const skiaViewRef = useRef<RecordingViewRef | null>(null);
+  const viewRef = useRef<RecordingViewRef | null>(null);
 
   const record = useCallback(async (options: RecordOptions): Promise<string> => {
     if (!NativeViewRecorder) throw new Error(LINKING_ERROR);
@@ -73,18 +80,17 @@ export function useSkiaViewRecorder(): ViewRecorder & {
       await NativeViewRecorder.startSession({ sessionId, ...nativeOptions });
 
       // Get the native view tag for the Skia view
-      const viewTag = skiaViewRef.current ? findNodeHandle(skiaViewRef.current) : null;
+      const viewTag = viewRef.current ? findNodeHandle(viewRef.current) : null;
+      if (!viewTag) {
+        throw new Error(
+          "SkiaRecordingView ref is not connected. Pass recorder.viewRef as the viewRef prop on <SkiaRecordingView>.",
+        );
+      }
 
       for (let i = 0; i < totalFrames; i++) {
         await onFrame?.({ frameIndex: i, totalFrames });
         await new Promise<void>((r) => requestAnimationFrame(() => r()));
-
-        if (viewTag) {
-          await NativeViewRecorder.captureSkiaFrame(sessionId, viewTag);
-        } else {
-          await NativeViewRecorder.captureFrame(sessionId);
-        }
-
+        await NativeViewRecorder.captureSkiaFrame(sessionId, viewTag);
         onProgress?.({ framesEncoded: i + 1, totalFrames });
       }
 
@@ -97,5 +103,5 @@ export function useSkiaViewRecorder(): ViewRecorder & {
     }
   }, []);
 
-  return useMemo(() => ({ sessionId: sessionIdRef.current, record, skiaViewRef }), [record]);
+  return useMemo(() => ({ sessionId: sessionIdRef.current, record, viewRef }), [record]);
 }
