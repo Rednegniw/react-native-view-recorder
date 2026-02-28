@@ -7,7 +7,6 @@ import AVFoundation
 import VideoToolbox
 import UIKit
 
-
 private class EncoderSession {
 
   let writer: AVAssetWriter
@@ -47,7 +46,6 @@ private class EncoderSession {
   }
 }
 
-
 // MARK: - ViewRecorder
 
 @objc(ViewRecorder)
@@ -60,7 +58,6 @@ public final class ViewRecorder: RCTEventEmitter {
   override public static func requiresMainQueueSetup() -> Bool { false }
 
   override public func supportedEvents() -> [String]! { [] }
-
 
   // MARK: - Session helpers
 
@@ -89,7 +86,6 @@ public final class ViewRecorder: RCTEventEmitter {
     return sessions[id] != nil
   }
 
-
   // MARK: - Lifecycle
 
   override public func invalidate() {
@@ -98,16 +94,13 @@ public final class ViewRecorder: RCTEventEmitter {
     sessions.removeAll()
     sessionsLock.unlock()
 
-    for (_, session) in allSessions {
-      if session.writer.status == .writing {
-        session.input.markAsFinished()
-        session.writer.cancelWriting()
-      }
+    for (_, session) in allSessions where session.writer.status == .writing {
+      session.input.markAsFinished()
+      session.writer.cancelWriting()
     }
 
     super.invalidate()
   }
-
 
   // MARK: - startSession
 
@@ -224,7 +217,7 @@ public final class ViewRecorder: RCTEventEmitter {
     // Compression properties
     var compression: [String: Any] = [
       AVVideoAverageBitRateKey: bitrate,
-      AVVideoMaxKeyFrameIntervalDurationKey: keyFrameInterval,
+      AVVideoMaxKeyFrameIntervalDurationKey: keyFrameInterval
     ]
 
     if let quality {
@@ -239,7 +232,7 @@ public final class ViewRecorder: RCTEventEmitter {
       AVVideoCodecKey: codecType,
       AVVideoWidthKey: width,
       AVVideoHeightKey: height,
-      AVVideoCompressionPropertiesKey: compression,
+      AVVideoCompressionPropertiesKey: compression
     ]
 
     let input = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
@@ -256,7 +249,7 @@ public final class ViewRecorder: RCTEventEmitter {
         kCVPixelBufferWidthKey as String: width,
         kCVPixelBufferHeightKey as String: height,
         kCVPixelBufferIOSurfacePropertiesKey as String: [:] as [String: Any],
-        kCVPixelBufferMetalCompatibilityKey as String: true,
+        kCVPixelBufferMetalCompatibilityKey as String: true
       ]
     )
 
@@ -288,7 +281,6 @@ public final class ViewRecorder: RCTEventEmitter {
     storeSession(sessionId, session)
     resolve(nil)
   }
-
 
   // MARK: - captureFrame
 
@@ -392,7 +384,6 @@ public final class ViewRecorder: RCTEventEmitter {
     }
   }
 
-
   // MARK: - captureSkiaFrame
 
   @objc(captureSkiaFrame:skiaViewTag:resolver:rejecter:)
@@ -482,7 +473,6 @@ public final class ViewRecorder: RCTEventEmitter {
     }
     return nil
   }
-
 
   // MARK: - finishSession
 

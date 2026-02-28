@@ -29,6 +29,15 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run lib check-types
 
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run lib test
+
   build:
     name: Build Library
     runs-on: ubuntu-latest
@@ -37,3 +46,49 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - run: bun run lib prepare
+
+  prebuild:
+    name: Expo Prebuild
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Prebuild iOS
+        working-directory: apps/example
+        run: bunx expo prebuild --platform ios --no-install
+      - name: Prebuild Android
+        working-directory: apps/example
+        run: bunx expo prebuild --platform android --no-install
+
+  circular-deps:
+    name: Circular Dependency Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bunx madge --circular --extensions ts,tsx packages/react-native-view-recorder/src/
+
+  lint-native:
+    name: Lint Native Code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: SwiftLint
+        uses: norio-nomura/action-swiftlint@3.2.1
+        with:
+          args: lint --strict --config .swiftlint.yml
+
+      - name: clang-format check
+        run: |
+          sudo apt-get install -y clang-format
+          find packages/react-native-view-recorder/ios \( -name '*.m' -o -name '*.mm' -o -name '*.h' \) \
+            -exec clang-format --dry-run --Werror --style=file {} +
+
+      - name: ktlint check
+        run: |
+          curl -sSLO https://github.com/pinterest/ktlint/releases/download/1.8.0/ktlint
+          chmod +x ktlint
+          ./ktlint "packages/react-native-view-recorder/android/src/**/*.kt"

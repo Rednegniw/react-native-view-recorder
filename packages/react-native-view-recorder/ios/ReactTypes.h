@@ -6,15 +6,13 @@
 #import <UIKit/UIKit.h>
 
 typedef void (^RCTPromiseResolveBlock)(id _Nullable result);
-typedef void (^RCTPromiseRejectBlock)(NSString * _Nonnull code,
-                                      NSString * _Nullable message,
-                                      NSError * _Nullable error);
+typedef void (^RCTPromiseRejectBlock)(NSString *_Nonnull code, NSString *_Nullable message, NSError *_Nullable error);
 
 @interface RCTEventEmitter : NSObject
 
-+ (NSString * _Nullable)moduleName;
++ (NSString *_Nullable)moduleName;
 + (BOOL)requiresMainQueueSetup;
-- (NSArray<NSString *> * _Nullable)supportedEvents;
+- (NSArray<NSString *> *_Nullable)supportedEvents;
 - (void)invalidate;
 
 @end

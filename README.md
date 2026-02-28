@@ -22,6 +22,16 @@
 - **Expo-friendly** - ships with a config plugin, just add to `app.json`
 - **New Architecture** - Fabric native component + TurboModule
 
+## Compatibility
+
+| | Minimum | Recommended |
+|---|---|---|
+| React Native | 0.73 | 0.83+ |
+| Expo SDK | 54 | 55+ |
+| iOS | 13.0 | 15.0+ |
+| Android | SDK 26 (8.0) | SDK 28+ |
+| Architecture | New Architecture only | |
+
 ## Installation
 
 ```bash
@@ -84,18 +94,41 @@ function App() {
 }
 ```
 
+## Skia Support
+
+Record Skia canvases using the dedicated `useSkiaViewRecorder` hook and `SkiaRecordingView` component:
+
+```tsx
+import { SkiaRecordingView, useSkiaViewRecorder } from "react-native-view-recorder";
+import { Canvas, Circle } from "@shopify/react-native-skia";
+
+function SkiaExample() {
+  const recorder = useSkiaViewRecorder();
+
+  return (
+    <SkiaRecordingView sessionId={recorder.sessionId} viewRef={recorder.viewRef}>
+      <Canvas style={{ width: 640, height: 480 }}>
+        <Circle cx={320} cy={240} r={100} color="cyan" />
+      </Canvas>
+    </SkiaRecordingView>
+  );
+}
+```
+
+On iOS, Skia frames are captured via a zero-copy Metal pipeline (IOSurface to Metal texture). On Android, `PixelCopy` captures the Skia TextureView directly from the compositor.
+
 ## API
 
 ### `useViewRecorder()`
 
-Hook that returns a `ViewRecorder` handle with:
+Returns a `ViewRecorder` handle:
 
-- `sessionId` - pass this to `<RecordingView>`
+- `sessionId` - pass to `<RecordingView>`
 - `record(options)` - records all frames and returns the output path
 
-### `<RecordingView>`
+### `useSkiaViewRecorder()`
 
-Native container component. Wrap the content you want to record. Accepts all `View` props plus a required `sessionId` string.
+Returns a `ViewRecorder` handle plus a `viewRef` to pass to `<SkiaRecordingView>`.
 
 ### `RecordOptions`
 
@@ -114,7 +147,7 @@ Native container component. Wrap the content you want to record. Accepts all `Vi
 | `keyFrameInterval` | `number` | 2 | Seconds between keyframes |
 | `optimizeForNetwork` | `boolean` | true | Move moov atom to front |
 
-## How it works
+## How It Works
 
 1. You wrap your content in `<RecordingView>` and call `recorder.record()`
 2. The library calls your `onFrame` callback, waits for React to render, then captures the native view
@@ -122,10 +155,14 @@ Native container component. Wrap the content you want to record. Accepts all `Vi
 4. On Android, `PixelCopy` captures from the window compositor into a bitmap, uploaded to MediaCodec via EGL
 5. When all frames are captured, the encoder finalizes the MP4
 
-## Platform Details
+### Platform Details
 
 - **iOS**: AVAssetWriter with H.264/HEVC/HEVC-with-alpha. `drawHierarchy` for view capture. Minimum iOS 13.0.
 - **Android**: MediaCodec with EGL/OpenGL ES 2.0. `PixelCopy` for view capture (captures Skia/TextureView). Minimum SDK 26.
+
+## Documentation
+
+For detailed guides on codec selection, bitrate configuration, and platform internals, see the [full documentation](https://github.com/Rednegniw/react-native-view-recorder).
 
 ## Contributing
 
