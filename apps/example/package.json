@@ -8,7 +8,10 @@
     "ios": "expo run:ios"
   },
   "dependencies": {
+    "@react-navigation/native": "^7.1.31",
+    "@react-navigation/native-stack": "^7.14.2",
     "@rednegniw/masked-view": "^0.4.0",
+    "@shopify/react-native-skia": "2.4.18",
     "expo": "~55.0.3",
     "expo-asset": "~55.0.2",
     "expo-file-system": "~55.0.2",
@@ -21,8 +24,8 @@
     "react-native-gesture-handler": "~2.30.0",
     "react-native-reanimated": "4.2.1",
     "react-native-safe-area-context": "~5.6.2",
-    "react-native-video-encoder": "workspace:*",
-    "react-native-view-shot": "^4.0.2"
+    "react-native-screens": "~4.23.0",
+    "react-native-view-recorder": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "~19.2.0",

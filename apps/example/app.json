@@ -1,11 +1,11 @@
 {
   "expo": {
     "name": "Video Encoder Example",
-    "slug": "video-encoder-example",
+    "slug": "view-recorder-example",
     "version": "1.0.0",
     "orientation": "portrait",
     "plugins": [
-      "react-native-video-encoder",
+      "react-native-view-recorder",
       [
         "expo-media-library",
         {
@@ -16,13 +16,13 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.rednegniw.videoencoder.example"
+      "bundleIdentifier": "com.rednegniw.viewrecorder.example"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#ffffff"
       },
-      "package": "com.rednegniw.videoencoder.example"
+      "package": "com.rednegniw.viewrecorder.example"
     }
   }
 }
