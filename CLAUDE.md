@@ -1,13 +1,13 @@
-# react-native-video-encoder
+# react-native-view-recorder
 
 ## What this project is
 
-An on-device PNG-sequence to MP4 encoder for React Native and Expo. No FFmpeg, no GPL. Uses platform video encoders (AVAssetWriter on iOS, MediaCodec on Android) via a Turbo Module.
+Record any React Native view to MP4 video. Captures views (including Skia canvases) frame-by-frame using native APIs (drawHierarchy on iOS, PixelCopy on Android) and encodes with hardware-accelerated H.264/HEVC (AVAssetWriter on iOS, MediaCodec on Android). No FFmpeg, no GPL.
 
 ## Monorepo structure
 
 Bun workspaces monorepo:
-- **`packages/react-native-video-encoder/`** - The publishable library (Turbo Module with Expo config plugin)
+- **`packages/react-native-view-recorder/`** - The publishable library (Turbo Module + native component with Expo config plugin)
 - **`apps/example/`** - Expo SDK 55 example app (RN 0.83)
 
 ## Reference project

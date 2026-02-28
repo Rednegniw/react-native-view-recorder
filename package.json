@@ -1,5 +1,5 @@
 {
-  "name": "react-native-video-encoder-monorepo",
+  "name": "react-native-view-recorder-monorepo",
   "version": "1.0.0",
   "private": true,
   "workspaces": [
@@ -14,7 +14,7 @@
   },
   "scripts": {
     "prepare": "lefthook install",
-    "lib": "bun --cwd packages/react-native-video-encoder",
+    "lib": "bun --cwd packages/react-native-view-recorder",
     "example": "bun --cwd apps/example",
     "check-types": "bun --filter '*' check-types",
     "lint": "biome check .",
