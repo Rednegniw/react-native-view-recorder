@@ -1,0 +1,52 @@
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+
+@layer base {
+  :root {
+    --brand-accent: #b075eb;
+  }
+
+  button,
+  [role="tab"] {
+    cursor: pointer;
+  }
+}
+
+@theme {
+  --color-fd-primary: #b075eb;
+  --color-fd-primary-foreground: hsl(0, 0%, 100%);
+  --color-fd-ring: #b075eb;
+}
+
+.dark {
+  --color-fd-primary: var(--brand-accent);
+  --color-fd-ring: var(--brand-accent);
+}
+
+/* Show TOC on full-width pages without shrinking the main content column */
+#nd-page[data-full] ~ #nd-toc {
+  width: 268px;
+}
+
+@media (min-width: 768px) {
+  #nd-docs-layout {
+    --fd-sidebar-width: 300px;
+  }
+}
+
+#nd-sidebar {
+  @apply md:border-0!;
+}
+
+/* Sidebar footer: place icon links on the same row */
+#nd-sidebar > div:last-child {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+#nd-page {
+  max-width: 1050px;
+}
