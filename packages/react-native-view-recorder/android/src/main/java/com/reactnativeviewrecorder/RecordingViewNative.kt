@@ -5,8 +5,9 @@ import com.facebook.react.views.view.ReactViewGroup
 import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
 
-class RecordingViewNative(context: Context) : ReactViewGroup(context) {
-
+class RecordingViewNative(
+  context: Context,
+) : ReactViewGroup(context) {
   companion object {
     val registry = ConcurrentHashMap<String, WeakReference<RecordingViewNative>>()
   }

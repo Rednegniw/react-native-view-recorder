@@ -15,8 +15,7 @@
 
 RCT_EXPORT_MODULE(RecordingView)
 
-- (UIView *)view
-{
+- (UIView *)view {
   return [RecordingViewNative new];
 }
 

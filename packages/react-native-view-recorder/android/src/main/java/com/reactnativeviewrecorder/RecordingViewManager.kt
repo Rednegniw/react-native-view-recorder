@@ -7,7 +7,6 @@ import com.facebook.react.uimanager.annotations.ReactProp
 
 @ReactModule(name = RecordingViewManager.REACT_CLASS)
 class RecordingViewManager : ViewGroupManager<RecordingViewNative>() {
-
   companion object {
     const val REACT_CLASS = "RecordingView"
   }
@@ -17,7 +16,10 @@ class RecordingViewManager : ViewGroupManager<RecordingViewNative>() {
   override fun createViewInstance(context: ThemedReactContext) = RecordingViewNative(context)
 
   @ReactProp(name = "sessionId")
-  fun setSessionId(view: RecordingViewNative, sessionId: String?) {
+  fun setSessionId(
+    view: RecordingViewNative,
+    sessionId: String?,
+  ) {
     view.sessionId = sessionId ?: ""
   }
 }

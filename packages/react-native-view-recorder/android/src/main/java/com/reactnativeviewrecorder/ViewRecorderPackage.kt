@@ -10,27 +10,28 @@ import com.facebook.react.uimanager.ViewManager
 
 @ReactModuleList(nativeModules = [ViewRecorderModule::class])
 class ViewRecorderPackage : BaseReactPackage() {
+  override fun getModule(
+    name: String,
+    reactContext: ReactApplicationContext,
+  ): NativeModule? = if (name == ViewRecorderModule.NAME) ViewRecorderModule(reactContext) else null
 
-  override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? {
-    return if (name == ViewRecorderModule.NAME) ViewRecorderModule(reactContext) else null
-  }
-
-  override fun getReactModuleInfoProvider() = ReactModuleInfoProvider {
-    val isTurboModule = BuildConfig.IS_NEW_ARCHITECTURE_ENABLED
-    mapOf(
-      ViewRecorderModule.NAME to ReactModuleInfo(
-        ViewRecorderModule.NAME,
-        ViewRecorderModule.NAME,
-        false,
-        false,
-        false,
-        false,
-        isTurboModule,
+  override fun getReactModuleInfoProvider() =
+    ReactModuleInfoProvider {
+      val isTurboModule = BuildConfig.IS_NEW_ARCHITECTURE_ENABLED
+      mapOf(
+        ViewRecorderModule.NAME to
+          ReactModuleInfo(
+            ViewRecorderModule.NAME,
+            ViewRecorderModule.NAME,
+            false,
+            false,
+            false,
+            false,
+            isTurboModule,
+          ),
       )
-    )
-  }
+    }
 
-  override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> {
-    return listOf(RecordingViewManager())
-  }
+  override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> =
+    listOf(RecordingViewManager())
 }

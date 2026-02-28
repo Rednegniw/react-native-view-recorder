@@ -1,11 +1,3 @@
-/**
- * Session-based view recorder using PixelCopy + MediaCodec.
- *
- * PixelCopy captures from the window compositor, so it sees
- * Skia, TextureView, and SurfaceView content that Canvas-based
- * approaches (View.draw) would miss.
- */
-
 package com.reactnativeviewrecorder
 
 import android.graphics.Bitmap
@@ -27,11 +19,17 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 
+/**
+ * Session-based view recorder using PixelCopy + MediaCodec.
+ *
+ * PixelCopy captures from the window compositor, so it sees
+ * Skia, TextureView, and SurfaceView content that Canvas-based
+ * approaches (View.draw) would miss.
+ */
 @ReactModule(name = ViewRecorderModule.NAME)
 class ViewRecorderModule(
-  reactContext: ReactApplicationContext
+  reactContext: ReactApplicationContext,
 ) : NativeViewRecorderSpec(reactContext) {
-
   companion object {
     const val NAME = "ViewRecorder"
     private const val TAG = "ViewRecorder"
@@ -60,10 +58,12 @@ class ViewRecorderModule(
     super.invalidate()
   }
 
-
   // ── Start session ─────────────────────────────────────────────────
 
-  override fun startSession(options: ReadableMap, promise: Promise) {
+  override fun startSession(
+    options: ReadableMap,
+    promise: Promise,
+  ) {
     scope.launch {
       var encoder: MediaCodec? = null
       var muxer: MediaMuxer? = null
@@ -83,23 +83,35 @@ class ViewRecorderModule(
           return@launch
         }
 
-        val codecMime = resolveCodec(
-          if (options.hasKey("codec") && !options.isNull("codec")) options.getString("codec") else null
-        )
+        val codecMime =
+          resolveCodec(
+            if (options.hasKey("codec") && !options.isNull("codec")) options.getString("codec") else null,
+          )
 
         val keyFrameInterval =
-          if (options.hasKey("keyFrameInterval") && !options.isNull("keyFrameInterval"))
+          if (options.hasKey("keyFrameInterval") && !options.isNull("keyFrameInterval")) {
             options.getDouble("keyFrameInterval").toInt()
-          else 2
+          } else {
+            2
+          }
 
         // Look up the RecordingView from the registry (optional when width/height are provided)
         val view = RecordingViewNative.registry[sessionId]?.get()
 
         val explicitWidth = if (options.hasKey("width") && !options.isNull("width")) options.getInt("width") else null
-        val explicitHeight = if (options.hasKey("height") && !options.isNull("height")) options.getInt("height") else null
+        val explicitHeight =
+          if (options.hasKey("height") &&
+            !options.isNull("height")
+          ) {
+            options.getInt("height")
+          } else {
+            null
+          }
 
         if ((explicitWidth == null || explicitHeight == null) && view == null) {
-          throw RuntimeException("No RecordingView found for sessionId: $sessionId. Either mount a RecordingView with this sessionId or provide explicit width and height.")
+          throw RuntimeException(
+            "No RecordingView found for sessionId: $sessionId. Either mount a RecordingView with this sessionId or provide explicit width and height.",
+          )
         }
 
         // Use pixel dimensions directly (view.width/height are already in px)
@@ -111,26 +123,32 @@ class ViewRecorderModule(
         val height = (rawHeight + 1) and 1.inv()
 
         if (width <= 0 || height <= 0) {
-          promise.reject("INVALID_SIZE", "View has zero dimensions (${width}x${height}). Ensure the RecordingView is laid out before recording.")
+          promise.reject(
+            "INVALID_SIZE",
+            "View has zero dimensions (${width}x$height). Ensure the RecordingView is laid out before recording.",
+          )
           return@launch
         }
 
         val bitrate =
-          if (options.hasKey("bitrate") && !options.isNull("bitrate"))
+          if (options.hasKey("bitrate") && !options.isNull("bitrate")) {
             options.getInt("bitrate")
-          else width * height * fps / 10
+          } else {
+            width * height * fps / 10
+          }
 
         File(output).delete()
 
-        Log.d(TAG, "Starting session $sessionId: ${width}x${height} @ ${fps}fps, codec=$codecMime")
+        Log.d(TAG, "Starting session $sessionId: ${width}x$height @ ${fps}fps, codec=$codecMime")
 
         // MediaFormat
-        val format = MediaFormat.createVideoFormat(codecMime, width, height).apply {
-          setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface)
-          setInteger(MediaFormat.KEY_BIT_RATE, bitrate)
-          setInteger(MediaFormat.KEY_FRAME_RATE, fps)
-          setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, keyFrameInterval)
-        }
+        val format =
+          MediaFormat.createVideoFormat(codecMime, width, height).apply {
+            setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface)
+            setInteger(MediaFormat.KEY_BIT_RATE, bitrate)
+            setInteger(MediaFormat.KEY_FRAME_RATE, fps)
+            setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, keyFrameInterval)
+          }
 
         // Dedicated HandlerThread for encoder callbacks
         callbackThread = HandlerThread("ViewRecorder-Callback-$sessionId").also { it.start() }
@@ -146,65 +164,80 @@ class ViewRecorderModule(
         encoder = MediaCodec.createEncoderByType(codecMime)
         muxer = MediaMuxer(output, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
 
-        encoder!!.setCallback(object : MediaCodec.Callback() {
-
-          override fun onInputBufferAvailable(codec: MediaCodec, index: Int) {
-            // Not called for Surface-input encoding
-          }
-
-          override fun onOutputBufferAvailable(codec: MediaCodec, index: Int, info: MediaCodec.BufferInfo) {
-            if (info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) {
-              codec.releaseOutputBuffer(index, false)
-              return
+        encoder!!.setCallback(
+          object : MediaCodec.Callback() {
+            override fun onInputBufferAvailable(
+              codec: MediaCodec,
+              index: Int,
+            ) {
+              // Not called for Surface-input encoding
             }
 
-            if (info.size > 0) {
-              val buf = codec.getOutputBuffer(index)!!
+            override fun onOutputBufferAvailable(
+              codec: MediaCodec,
+              index: Int,
+              info: MediaCodec.BufferInfo,
+            ) {
+              if (info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) {
+                codec.releaseOutputBuffer(index, false)
+                return
+              }
 
-              if (muxerStarted) {
-                buf.position(info.offset)
-                buf.limit(info.offset + info.size)
-                muxer!!.writeSampleData(trackIndex, buf, info)
-              } else {
-                val copy = ByteBuffer.allocateDirect(info.size)
-                buf.position(info.offset)
-                buf.limit(info.offset + info.size)
-                copy.put(buf)
-                copy.flip()
-                val infoCopy = MediaCodec.BufferInfo()
-                infoCopy.set(0, info.size, info.presentationTimeUs, info.flags)
-                pendingBuffers.add(Pair(copy, infoCopy))
+              if (info.size > 0) {
+                val buf = codec.getOutputBuffer(index)!!
+
+                if (muxerStarted) {
+                  buf.position(info.offset)
+                  buf.limit(info.offset + info.size)
+                  muxer!!.writeSampleData(trackIndex, buf, info)
+                } else {
+                  val copy = ByteBuffer.allocateDirect(info.size)
+                  buf.position(info.offset)
+                  buf.limit(info.offset + info.size)
+                  copy.put(buf)
+                  copy.flip()
+                  val infoCopy = MediaCodec.BufferInfo()
+                  infoCopy.set(0, info.size, info.presentationTimeUs, info.flags)
+                  pendingBuffers.add(Pair(copy, infoCopy))
+                }
+              }
+
+              codec.releaseOutputBuffer(index, false)
+
+              if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) {
+                eosLatch.countDown()
               }
             }
 
-            codec.releaseOutputBuffer(index, false)
+            override fun onOutputFormatChanged(
+              codec: MediaCodec,
+              format: MediaFormat,
+            ) {
+              if (muxerStarted) return
 
-            if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) {
+              trackIndex = muxer!!.addTrack(format)
+              muxer!!.start()
+              muxerStarted = true
+
+              for ((buf, bufInfo) in pendingBuffers) {
+                muxer!!.writeSampleData(trackIndex, buf, bufInfo)
+              }
+              pendingBuffers.clear()
+
+              Log.d(TAG, "Muxer started for session $sessionId")
+            }
+
+            override fun onError(
+              codec: MediaCodec,
+              e: MediaCodec.CodecException,
+            ) {
+              Log.e(TAG, "MediaCodec error in session $sessionId", e)
+              codecError = e
               eosLatch.countDown()
             }
-          }
-
-          override fun onOutputFormatChanged(codec: MediaCodec, format: MediaFormat) {
-            if (muxerStarted) return
-
-            trackIndex = muxer!!.addTrack(format)
-            muxer!!.start()
-            muxerStarted = true
-
-            for ((buf, bufInfo) in pendingBuffers) {
-              muxer!!.writeSampleData(trackIndex, buf, bufInfo)
-            }
-            pendingBuffers.clear()
-
-            Log.d(TAG, "Muxer started for session $sessionId")
-          }
-
-          override fun onError(codec: MediaCodec, e: MediaCodec.CodecException) {
-            Log.e(TAG, "MediaCodec error in session $sessionId", e)
-            codecError = e
-            eosLatch.countDown()
-          }
-        }, callbackHandler)
+          },
+          callbackHandler,
+        )
 
         encoder!!.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
         inputSurface = encoder!!.createInputSurface()
@@ -215,39 +248,40 @@ class ViewRecorderModule(
         val eglHandler = Handler(eglThread!!.looper)
 
         // Initialize EGL on its dedicated thread
-        egl = suspendCancellableCoroutine { cont ->
-          eglHandler.post {
-            val wrapper = EglWrapper(inputSurface!!, width, height)
-            cont.resume(wrapper)
+        egl =
+          suspendCancellableCoroutine { cont ->
+            eglHandler.post {
+              val wrapper = EglWrapper(inputSurface!!, width, height)
+              cont.resume(wrapper)
+            }
           }
-        }
 
         // Reusable bitmap at video dimensions (avoids per-frame allocation)
         bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
 
-        val session = EncoderSession(
-          sessionId = sessionId,
-          encoder = encoder!!,
-          muxer = muxer!!,
-          egl = egl!!,
-          inputSurface = inputSurface!!,
-          eglThread = eglThread!!,
-          eglHandler = eglHandler,
-          callbackThread = callbackThread!!,
-          bitmap = bitmap!!,
-          eosLatch = eosLatch,
-          muxerStartedRef = { muxerStarted },
-          codecErrorRef = { codecError },
-          output = output,
-          fps = fps,
-          width = width,
-          height = height,
-        )
+        val session =
+          EncoderSession(
+            sessionId = sessionId,
+            encoder = encoder!!,
+            muxer = muxer!!,
+            egl = egl!!,
+            inputSurface = inputSurface!!,
+            eglThread = eglThread!!,
+            eglHandler = eglHandler,
+            callbackThread = callbackThread!!,
+            bitmap = bitmap!!,
+            eosLatch = eosLatch,
+            muxerStartedRef = { muxerStarted },
+            codecErrorRef = { codecError },
+            output = output,
+            fps = fps,
+            width = width,
+            height = height,
+          )
 
         sessions[sessionId] = session
         Log.d(TAG, "Session $sessionId ready")
         promise.resolve(null)
-
       } catch (t: Throwable) {
         Log.e(TAG, "startSession failed", t)
 
@@ -266,10 +300,13 @@ class ViewRecorderModule(
     }
   }
 
-
   // ── Capture Skia frame (Android: uses PixelCopy since Skia renders via hardware-accelerated layers) ──
 
-  override fun captureSkiaFrame(sessionId: String, skiaViewTag: Double, promise: Promise) {
+  override fun captureSkiaFrame(
+    sessionId: String,
+    skiaViewTag: Double,
+    promise: Promise,
+  ) {
     val session = sessions[sessionId]
 
     if (session == null) {
@@ -295,12 +332,13 @@ class ViewRecorderModule(
       val location = IntArray(2)
       view.getLocationInWindow(location)
 
-      val rect = Rect(
-        maxOf(0, location[0]),
-        maxOf(0, location[1]),
-        minOf(activity.window.decorView.width, location[0] + view.width),
-        minOf(activity.window.decorView.height, location[1] + view.height),
-      )
+      val rect =
+        Rect(
+          maxOf(0, location[0]),
+          maxOf(0, location[1]),
+          minOf(activity.window.decorView.width, location[0] + view.width),
+          minOf(activity.window.decorView.height, location[1] + view.height),
+        )
 
       if (rect.width() <= 0 || rect.height() <= 0) {
         promise.reject("VIEW_NOT_VISIBLE", "RecordingView has no visible area to capture")
@@ -331,10 +369,12 @@ class ViewRecorderModule(
     }
   }
 
-
   // ── Capture frame ─────────────────────────────────────────────────
 
-  override fun captureFrame(sessionId: String, promise: Promise) {
+  override fun captureFrame(
+    sessionId: String,
+    promise: Promise,
+  ) {
     val session = sessions[sessionId]
 
     if (session == null) {
@@ -365,19 +405,21 @@ class ViewRecorderModule(
       val location = IntArray(2)
       view.getLocationInWindow(location)
 
-      val fitsInWindow = location[0] >= 0
-        && location[1] >= 0
-        && location[0] + view.width <= activity.window.decorView.width
-        && location[1] + view.height <= activity.window.decorView.height
+      val fitsInWindow =
+        location[0] >= 0 &&
+          location[1] >= 0 &&
+          location[0] + view.width <= activity.window.decorView.width &&
+          location[1] + view.height <= activity.window.decorView.height
 
       if (fitsInWindow) {
         // Fast path: PixelCopy reads already-composited pixels from the GPU
-        val rect = Rect(
-          location[0],
-          location[1],
-          location[0] + view.width,
-          location[1] + view.height,
-        )
+        val rect =
+          Rect(
+            location[0],
+            location[1],
+            location[0] + view.width,
+            location[1] + view.height,
+          )
 
         PixelCopy.request(
           activity.window,
@@ -425,10 +467,12 @@ class ViewRecorderModule(
     }
   }
 
-
   // ── Finish session ────────────────────────────────────────────────
 
-  override fun finishSession(sessionId: String, promise: Promise) {
+  override fun finishSession(
+    sessionId: String,
+    promise: Promise,
+  ) {
     val session = sessions.remove(sessionId)
 
     if (session == null) {
@@ -476,7 +520,6 @@ class ViewRecorderModule(
 
         Log.d(TAG, "Session $sessionId complete: ${session.output}")
         promise.resolve(session.output)
-
       } catch (t: Throwable) {
         Log.e(TAG, "finishSession failed for $sessionId", t)
 
@@ -495,7 +538,6 @@ class ViewRecorderModule(
     }
   }
 }
-
 
 // ── Encoder session ───────────────────────────────────────────────
 
@@ -519,9 +561,9 @@ private class EncoderSession(
 ) {
   val deltaUs = 1_000_000L / fps
   var ptsUs = 0L
+
   @Volatile var frameIndex = 0L
 }
-
 
 // ── HEVC hardware detection ───────────────────────────────────────
 
@@ -532,11 +574,12 @@ private fun hasHardwareHevcEncoder(): Boolean {
     if (!info.isEncoder) continue
     if ("video/hevc" !in info.supportedTypes) continue
 
-    val isHardware = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      info.isHardwareAccelerated
-    } else {
-      !info.name.startsWith("OMX.google.") && !info.name.startsWith("c2.android.")
-    }
+    val isHardware =
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        info.isHardwareAccelerated
+      } else {
+        !info.name.startsWith("OMX.google.") && !info.name.startsWith("c2.android.")
+      }
 
     if (isHardware) return true
   }
@@ -544,11 +587,10 @@ private fun hasHardwareHevcEncoder(): Boolean {
   return false
 }
 
-private fun resolveCodec(userCodec: String?): String {
-  return when (userCodec) {
+private fun resolveCodec(userCodec: String?): String =
+  when (userCodec) {
     "h264" -> "video/avc"
     "hevc" -> "video/hevc"
     "hevcWithAlpha" -> throw RuntimeException("hevcWithAlpha is only supported on iOS")
     else -> if (hasHardwareHevcEncoder()) "video/hevc" else "video/avc"
   }
-}

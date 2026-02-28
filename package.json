@@ -11,7 +11,8 @@
     "@biomejs/biome": "^2.4.0",
     "@changesets/changelog-github": "^0.5.2",
     "@changesets/cli": "^2.29.0",
-    "lefthook": "^2.1.1"
+    "lefthook": "^2.1.1",
+    "madge": "^8.0.0"
   },
   "scripts": {
     "prepare": "lefthook install",
