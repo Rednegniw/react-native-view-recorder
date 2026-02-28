@@ -69,8 +69,9 @@
   },
   "scripts": {
     "prepare": "bob build",
-    "prepublishOnly": "tsc --noEmit",
+    "prepublishOnly": "tsc --noEmit && jest",
     "check-types": "tsc --noEmit",
+    "test": "jest",
     "lint": "biome check .",
     "lint:fix": "biome check --write ."
   },
@@ -85,7 +86,10 @@
     }
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.0.0",
     "react-native-builder-bob": "^0.40.18",
+    "ts-jest": "^29.4.6",
     "typescript": "~5.9.2"
   },
   "react-native-builder-bob": {
