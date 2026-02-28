@@ -1,0 +1,109 @@
+{
+  "name": "react-native-view-recorder",
+  "version": "0.1.0",
+  "description": "Record any React Native view to MP4 video. Captures views (including Skia canvases) frame-by-frame using native APIs and encodes with hardware-accelerated H.264/HEVC. No FFmpeg, no GPL.",
+  "source": "./src/index.ts",
+  "main": "./lib/module/index.js",
+  "module": "./lib/module/index.js",
+  "react-native": "./src/index.ts",
+  "types": "./lib/typescript/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "react-native": "./src/index.ts",
+      "types": "./lib/typescript/index.d.ts",
+      "default": "./lib/module/index.js"
+    },
+    "./app.plugin": "./app.plugin.js",
+    "./app.plugin.js": "./app.plugin.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "lib",
+    "ios",
+    "android/src",
+    "android/build.gradle",
+    "android/proguard-rules.pro",
+    "plugin",
+    "app.plugin.js",
+    "react-native-view-recorder.podspec"
+  ],
+  "sideEffects": false,
+  "codegenConfig": {
+    "name": "RNViewRecorderSpec",
+    "type": "all",
+    "jsSrcsDir": "./src",
+    "android": {
+      "javaPackageName": "com.reactnativeviewrecorder"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Rednegniw/react-native-view-recorder.git",
+    "directory": "packages/react-native-view-recorder"
+  },
+  "keywords": [
+    "react-native",
+    "expo",
+    "video",
+    "recorder",
+    "view-recorder",
+    "screen-capture",
+    "mp4",
+    "skia",
+    "mediacodec",
+    "avassetwriter",
+    "h264",
+    "hevc",
+    "turbomodule"
+  ],
+  "author": "Antonin Wingender",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Rednegniw/react-native-view-recorder/issues"
+  },
+  "homepage": "https://github.com/Rednegniw/react-native-view-recorder#readme",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "prepare": "bob build",
+    "prepublishOnly": "tsc --noEmit",
+    "check-types": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write ."
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-native": ">=0.73",
+    "expo": ">=54.0.0"
+  },
+  "peerDependenciesMeta": {
+    "expo": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "react-native-builder-bob": "^0.40.18",
+    "typescript": "~5.9.2"
+  },
+  "react-native-builder-bob": {
+    "source": "src",
+    "output": "lib",
+    "targets": [
+      [
+        "module",
+        {
+          "esm": true
+        }
+      ],
+      [
+        "typescript",
+        {
+          "project": "tsconfig.build.json"
+        }
+      ]
+    ]
+  }
+}
