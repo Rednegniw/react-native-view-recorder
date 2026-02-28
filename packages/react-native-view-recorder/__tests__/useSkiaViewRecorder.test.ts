@@ -28,20 +28,20 @@ beforeEach(() => {
 
 describe("useSkiaViewRecorder", () => {
   describe("session identity", () => {
-    test("returns sessionId, record, and skiaViewRef", () => {
+    test("returns sessionId, record, and viewRef", () => {
       const result = useSkiaViewRecorder();
 
       expect(result.sessionId).toMatch(/^vr_\d+_\d+$/);
       expect(typeof result.record).toBe("function");
-      expect(result.skiaViewRef).toEqual({ current: null });
+      expect(result.viewRef).toEqual({ current: null });
     });
   });
 
   describe("Skia frame capture path", () => {
-    test("calls captureSkiaFrame when skiaViewRef is set and findNodeHandle returns a viewTag", async () => {
-      const { sessionId, record, skiaViewRef } = useSkiaViewRecorder();
+    test("calls captureSkiaFrame when viewRef is set and findNodeHandle returns a viewTag", async () => {
+      const { sessionId, record, viewRef } = useSkiaViewRecorder();
 
-      Object.assign(skiaViewRef, { current: {} });
+      Object.assign(viewRef, { current: {} });
       (findNodeHandle as jest.Mock).mockReturnValue(42);
 
       await record(baseOptions);
@@ -55,32 +55,29 @@ describe("useSkiaViewRecorder", () => {
     });
   });
 
-  describe("fallback to regular capture", () => {
-    test("falls back to captureFrame when skiaViewRef.current is null", async () => {
+  describe("ref validation", () => {
+    test("throws when viewRef.current is null", async () => {
       const { record } = useSkiaViewRecorder();
 
-      await record(baseOptions);
-
-      expect(mockNative.captureFrame).toHaveBeenCalledTimes(3);
-      expect(mockNative.captureSkiaFrame).not.toHaveBeenCalled();
+      await expect(record(baseOptions)).rejects.toThrow("SkiaRecordingView ref is not connected");
     });
 
-    test("falls back to captureFrame when findNodeHandle returns null", async () => {
-      const { record, skiaViewRef } = useSkiaViewRecorder();
+    test("throws when findNodeHandle returns null", async () => {
+      const { record, viewRef } = useSkiaViewRecorder();
 
-      Object.assign(skiaViewRef, { current: {} });
+      Object.assign(viewRef, { current: {} });
       (findNodeHandle as jest.Mock).mockReturnValue(null);
 
-      await record(baseOptions);
-
-      expect(mockNative.captureFrame).toHaveBeenCalledTimes(3);
-      expect(mockNative.captureSkiaFrame).not.toHaveBeenCalled();
+      await expect(record(baseOptions)).rejects.toThrow("SkiaRecordingView ref is not connected");
     });
   });
 
   describe("shared orchestration behavior", () => {
     test("calls startSession and finishSession correctly", async () => {
-      const { sessionId, record } = useSkiaViewRecorder();
+      const { sessionId, record, viewRef } = useSkiaViewRecorder();
+
+      Object.assign(viewRef, { current: {} });
+      (findNodeHandle as jest.Mock).mockReturnValue(42);
 
       const result = await record(baseOptions);
 
@@ -96,9 +93,12 @@ describe("useSkiaViewRecorder", () => {
     });
 
     test("calls onFrame and onProgress callbacks correctly", async () => {
-      const { record } = useSkiaViewRecorder();
+      const { record, viewRef } = useSkiaViewRecorder();
       const onFrame = jest.fn();
       const onProgress = jest.fn();
+
+      Object.assign(viewRef, { current: {} });
+      (findNodeHandle as jest.Mock).mockReturnValue(42);
 
       await record({ ...baseOptions, totalFrames: 2, onFrame, onProgress });
 
@@ -114,19 +114,10 @@ describe("useSkiaViewRecorder", () => {
       });
     });
 
-    test("handles captureFrame errors with cleanup", async () => {
-      const { record } = useSkiaViewRecorder();
-
-      mockNative.captureFrame.mockRejectedValueOnce(new Error("capture failed"));
-
-      await expect(record(baseOptions)).rejects.toThrow("capture failed");
-      expect(mockNative.finishSession).toHaveBeenCalledTimes(1);
-    });
-
     test("handles captureSkiaFrame errors with cleanup", async () => {
-      const { record, skiaViewRef } = useSkiaViewRecorder();
+      const { record, viewRef } = useSkiaViewRecorder();
 
-      Object.assign(skiaViewRef, { current: {} });
+      Object.assign(viewRef, { current: {} });
       (findNodeHandle as jest.Mock).mockReturnValue(42);
       mockNative.captureSkiaFrame.mockRejectedValueOnce(new Error("skia capture failed"));
 
@@ -135,7 +126,10 @@ describe("useSkiaViewRecorder", () => {
     });
 
     test("prevents concurrent recording", async () => {
-      const { record } = useSkiaViewRecorder();
+      const { record, viewRef } = useSkiaViewRecorder();
+
+      Object.assign(viewRef, { current: {} });
+      (findNodeHandle as jest.Mock).mockReturnValue(42);
 
       let resolveStart!: () => void;
       mockNative.startSession.mockImplementationOnce(
