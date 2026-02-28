@@ -1,0 +1,78 @@
+---
+title: RecordingView
+description: Native container component and useViewRecorder hook for recording standard React Native views
+full: true
+---
+
+## RecordingView
+
+`RecordingView` is a native container component. Wrap the content you want to record inside it and link it to a recorder session via the `sessionId` prop.
+
+### Import
+
+```tsx
+import { RecordingView, useViewRecorder } from "react-native-view-recorder";
+```
+
+### Props
+
+`RecordingView` accepts all standard `View` props plus:
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `sessionId` | `string` | Yes | Session identifier from `useViewRecorder()`. Links this view to the recorder. |
+
+All other props (e.g. `style`, `pointerEvents`, `children`) are passed through to the underlying native view.
+
+### Example
+
+```tsx
+const recorder = useViewRecorder();
+
+<RecordingView
+  sessionId={recorder.sessionId}
+  style={{ width: 640, height: 480 }}
+>
+  <MyAnimatedContent />
+</RecordingView>
+```
+
+## useViewRecorder
+
+Hook that creates a view recorder session.
+
+### Signature
+
+```tsx
+function useViewRecorder(): ViewRecorder
+```
+
+### Returns
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `sessionId` | `string` | Unique session ID. Pass this as the `sessionId` prop on `<RecordingView>`. |
+| `record` | `(options: RecordOptions) => Promise<string>` | Starts recording. Returns the output file path when complete. |
+
+### Usage
+
+```tsx
+const recorder = useViewRecorder();
+
+// Link to the view
+<RecordingView sessionId={recorder.sessionId}>
+  <Content frame={frame} />
+</RecordingView>
+
+// Record
+const outputPath = await recorder.record({
+  output: "/path/to/output.mp4",
+  fps: 30,
+  totalFrames: 150,
+  onFrame: async ({ frameIndex }) => setFrame(frameIndex),
+});
+```
+
+<Callout type="warn">
+Only one recording can be in progress per session at a time. Calling `record()` while a recording is already active will throw an error.
+</Callout>

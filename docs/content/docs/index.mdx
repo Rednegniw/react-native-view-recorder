@@ -1,0 +1,40 @@
+---
+title: Overview
+description: Record any React Native view to MP4 video with hardware-accelerated encoding. No FFmpeg, no GPL.
+full: true
+---
+
+## What is React Native View Recorder?
+
+React Native View Recorder captures any React Native view (including Skia canvases) frame-by-frame and encodes the frames into MP4 video using platform-native hardware encoders.
+
+- **iOS**: `drawHierarchy` renders standard views into bitmaps fed to `AVAssetWriter`. Skia content uses a separate zero-copy Metal pipeline since `drawHierarchy` cannot capture `CAMetalLayer`.
+- **Android**: `PixelCopy` captures from the window compositor (works with all view types including Skia), uploaded to `MediaCodec` via EGL
+
+There are no bundled binaries, no FFmpeg, and no GPL/LGPL concerns.
+
+## Key features
+
+- **View-level capture**: record a specific view, not the entire screen
+- **Skia support**: captures `@shopify/react-native-skia` canvases and TextureViews
+- **Zero disk I/O during recording**: frames go directly from native capture to the hardware encoder
+- **HEVC support**: H.264, H.265, and HEVC with alpha (iOS)
+- **Tiny footprint**: ~60 KB of native code, zero third-party binaries
+- **MIT licensed**: no GPL/LGPL concerns
+- **Expo-friendly**: ships with a config plugin
+- **New Architecture**: Fabric native component + TurboModule
+
+## How it works
+
+1. Wrap your content in `<RecordingView>` and call `recorder.record()`
+2. The library calls your `onFrame` callback, waits for React to render, then captures the native view
+3. On iOS, `drawHierarchy` renders the view into a bitmap, which is copied into a `CVPixelBuffer` for `AVAssetWriter`. For Skia content, a zero-copy Metal pipeline captures directly into the encoder's pixel buffers.
+4. On Android, `PixelCopy` captures from the window compositor into a bitmap, uploaded to MediaCodec via EGL
+5. When all frames are captured, the encoder finalizes the MP4
+
+## Platform requirements
+
+| Platform | Minimum version | Capture method | Encoder |
+|----------|----------------|----------------|---------|
+| iOS | 13.0 | `drawHierarchy` | AVAssetWriter |
+| Android | SDK 26 (8.0) | `PixelCopy` | MediaCodec + EGL |
