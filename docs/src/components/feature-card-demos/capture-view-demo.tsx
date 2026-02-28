@@ -20,7 +20,7 @@ export function CaptureViewDemo() {
           transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
         >
           {/* REC indicator */}
-          <div className="absolute top-0.5 right-1 flex items-center gap-0.5">
+          <div className="absolute -top-1.5 right-1 flex items-center gap-0.5">
             <motion.div
               className="size-1 rounded-full bg-red-500"
               animate={{ opacity: [1, 0.3, 1] }}

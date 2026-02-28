@@ -74,7 +74,7 @@ export function SkiaDemo() {
         />
 
         {/* REC indicator */}
-        <div className="absolute top-1 left-1.5 flex items-center gap-1">
+        <div className="absolute -top-1.5 left-1.5 flex items-center gap-1">
           <motion.div
             className="size-1.5 rounded-full bg-red-500"
             animate={{ opacity: [1, 0.3, 1] }}
