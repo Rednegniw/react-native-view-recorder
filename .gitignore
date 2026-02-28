@@ -20,3 +20,9 @@ packages/*/android/build/
 apps/example/.expo/
 apps/example/android/
 apps/example/ios/
+
+# Docs
+docs/.next/
+docs/.source
+docs/.vercel
+docs/next-env.d.ts

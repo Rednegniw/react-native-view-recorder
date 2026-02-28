@@ -4,7 +4,8 @@
   "private": true,
   "workspaces": [
     "packages/*",
-    "apps/*"
+    "apps/*",
+    "docs"
   ],
   "devDependencies": {
     "@biomejs/biome": "^2.4.0",
@@ -14,17 +15,20 @@
   },
   "scripts": {
     "prepare": "lefthook install",
+    "docs": "bun --cwd docs",
     "lib": "bun --cwd packages/react-native-view-recorder",
     "example": "bun --cwd apps/example",
     "check-types": "bun --filter '*' check-types",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
-    "build": "bun run lib prepare"
+    "build": "bun run lib prepare",
+    "test": "bun run lib test"
   },
   "overrides": {
     "expo": "~55.0.3",
     "react": "19.2.0",
+    "react-dom": "19.2.0",
     "react-native": "0.83.2"
   }
 }

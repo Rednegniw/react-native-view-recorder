@@ -7,6 +7,10 @@
       "!**/node_modules",
       "!**/lib",
       "!**/dist",
+      "!**/docs/.next",
+      "!**/docs/.source",
+      "!**/.next",
+      "!**/.source",
       "!**/.expo",
       "!**/android",
       "!**/ios"
@@ -22,6 +26,9 @@
         "noUnusedVariables": "warn",
         "noUnusedFunctionParameters": "warn"
       },
+      "security": {
+        "noDangerouslySetInnerHtml": "off"
+      },
       "suspicious": {
         "noArrayIndexKey": "off",
         "noAssignInExpressions": "off"
@@ -36,6 +43,12 @@
     "indentStyle": "space",
     "indentWidth": 2,
     "lineWidth": 100
+  },
+  "css": {
+    "parser": {
+      "cssModules": true,
+      "tailwindDirectives": true
+    }
   },
   "javascript": {
     "formatter": {
