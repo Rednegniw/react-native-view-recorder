@@ -100,12 +100,12 @@ export default function SkiaRecording() {
 
           {/* Orbiting circles */}
           {Array.from({ length: 5 }).map((_, i) => {
-            const a = angle + (i * Math.PI * 2) / 5;
+            const a = -angle + (i * Math.PI * 2) / 5;
             return (
               <Circle
                 key={i}
-                cx={cx + Math.cos(a) * 100}
-                cy={cy + Math.sin(a) * 100}
+                cx={cx + Math.cos(a) * 120}
+                cy={cy + Math.sin(a) * 120}
                 r={10}
                 color={hsl((hue + i * 40) % 360, 80, 65)}
               />

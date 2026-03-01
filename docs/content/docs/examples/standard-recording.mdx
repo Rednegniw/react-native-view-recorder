@@ -48,40 +48,84 @@ export default function CountdownRecording() {
   }, [recorder]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#000" }}>
-      <RecordingView
-        sessionId={recorder.sessionId}
-        style={{ width: 640, height: 480 }}
-      >
-        <LinearGradient
-          colors={["#4A90D9", "#6B5CE7"]}
+    <View style={{ flex: 1, backgroundColor: "#000", padding: 20 }}>
+      {/* REC indicator (outside RecordingView so it won't appear in the video) */}
+      {recording && (
+        <View
           style={{
-            flex: 1,
+            flexDirection: "row",
             alignItems: "center",
-            justifyContent: "center",
+            gap: 6,
+            marginBottom: 8,
           }}
         >
+          <View
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              backgroundColor: "#FF3B30",
+            }}
+          />
           <Text
             style={{
-              color: "#fff",
-              fontSize: 120,
-              fontWeight: "800",
+              color: "#FF3B30",
+              fontSize: 12,
+              fontWeight: "700",
+              letterSpacing: 1,
             }}
           >
-            {second}
+            REC
           </Text>
-          <Text
-            style={{
-              color: "rgba(255,255,255,0.5)",
-              fontSize: 28,
-            }}
-          >
-            / {DURATION}
-          </Text>
-        </LinearGradient>
-      </RecordingView>
+        </View>
+      )}
 
-      <Pressable onPress={handleRecord} disabled={recording}>
+      <View
+        style={{
+          borderRadius: 16,
+          overflow: "hidden",
+          borderWidth: recording ? 2 : 0,
+          borderColor: "#FF3B30",
+        }}
+      >
+        <RecordingView
+          sessionId={recorder.sessionId}
+          style={{ width: "100%", aspectRatio: 640 / 480 }}
+        >
+          <LinearGradient
+            colors={["#4A90D9", "#6B5CE7"]}
+            style={{
+              flex: 1,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text
+              style={{
+                color: "#fff",
+                fontSize: 120,
+                fontWeight: "800",
+              }}
+            >
+              {second}
+            </Text>
+            <Text
+              style={{
+                color: "rgba(255,255,255,0.5)",
+                fontSize: 28,
+              }}
+            >
+              / {DURATION}
+            </Text>
+          </LinearGradient>
+        </RecordingView>
+      </View>
+
+      <Pressable
+        onPress={handleRecord}
+        disabled={recording}
+        style={{ marginTop: 16 }}
+      >
         <Text style={{ color: "#fff", fontSize: 16 }}>
           {recording ? `Recording... ${progress}%` : "Record"}
         </Text>
