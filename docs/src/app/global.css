@@ -50,3 +50,14 @@
 #nd-page {
   max-width: 1050px;
 }
+
+@keyframes tab-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+}
+
+@utility animate-tab-slide-in {
+  animation: tab-slide-in 0.2s ease-out;
+}
