@@ -9,6 +9,7 @@ import {
 import { File, Paths } from "expo-file-system";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View } from "react-native";
+import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { SkiaRecordingView, useSkiaViewRecorder } from "react-native-view-recorder";
 import { RecIndicator } from "../components/RecIndicator";
 import { VideoOverview } from "../components/VideoOverview";
@@ -34,14 +35,14 @@ function hslToHex(h: number, s: number, l: number): string {
   return `#${f(0)}${f(8)}${f(4)}`;
 }
 
-type Phase = "idle" | "recording" | "done";
+type Phase = "recording" | "done";
 
 export const AutoplaySkiaDemo = () => {
   const recorder = useSkiaViewRecorder();
   const mountedRef = useRef(true);
   const recordingRef = useRef(false);
 
-  const [phase, setPhase] = useState<Phase>("idle");
+  const [phase, setPhase] = useState<Phase>("recording");
   const [videoUri, setVideoUri] = useState<string | null>(null);
   const [frameProgress, setFrameProgress] = useState(0);
   const [canvasSize, setCanvasSize] = useState({ width: 1, height: 1 });
@@ -75,19 +76,18 @@ export const AutoplaySkiaDemo = () => {
       setVideoUri(result);
       setPhase("done");
     } catch {
-      if (mountedRef.current) setPhase("idle");
+      if (mountedRef.current) setPhase("recording");
     } finally {
       recordingRef.current = false;
     }
   }, [recorder]);
 
-  // Auto-start after mount
+  // Auto-start on mount
   useEffect(() => {
     mountedRef.current = true;
-    const timeout = setTimeout(startRecording, 1500);
+    startRecording();
     return () => {
       mountedRef.current = false;
-      clearTimeout(timeout);
     };
   }, [startRecording]);
 
@@ -98,8 +98,6 @@ export const AutoplaySkiaDemo = () => {
     return () => clearTimeout(timeout);
   }, [phase, startRecording]);
 
-  const isRecording = phase === "recording";
-
   return (
     <View
       style={{
@@ -107,32 +105,48 @@ export const AutoplaySkiaDemo = () => {
         backgroundColor: colors.background,
         justifyContent: "center",
         alignItems: "center",
+        paddingHorizontal: 20,
       }}
     >
-      {isRecording && <RecIndicator />}
-
       {/* Skia recording content */}
       {phase !== "done" && (
-        <View style={{ borderRadius: 16, overflow: "hidden" }}>
-          <SkiaRecordingView
-            viewRef={recorder.viewRef}
-            sessionId={recorder.sessionId}
-            style={{ width: "100%", aspectRatio: WIDTH / HEIGHT }}
-            pointerEvents="none"
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          exiting={FadeOut.duration(300)}
+          style={{ width: "100%" }}
+        >
+          <View style={{ marginBottom: 8 }}>
+            <RecIndicator />
+          </View>
+
+          <View
+            style={{
+              borderRadius: 16,
+              overflow: "hidden",
+              borderWidth: 2,
+              borderColor: colors.recording,
+            }}
           >
-            <SkiaContent
-              progress={frameProgress}
-              canvasWidth={canvasSize.width}
-              canvasHeight={canvasSize.height}
-              onCanvasLayout={setCanvasSize}
-            />
-          </SkiaRecordingView>
-        </View>
+            <SkiaRecordingView
+              viewRef={recorder.viewRef}
+              sessionId={recorder.sessionId}
+              style={{ width: "100%", aspectRatio: WIDTH / HEIGHT }}
+              pointerEvents="none"
+            >
+              <SkiaContent
+                progress={frameProgress}
+                canvasWidth={canvasSize.width}
+                canvasHeight={canvasSize.height}
+                onCanvasLayout={setCanvasSize}
+              />
+            </SkiaRecordingView>
+          </View>
+        </Animated.View>
       )}
 
       {/* Video result */}
       {videoUri && phase === "done" && (
-        <View style={{ width: "100%", paddingHorizontal: 20 }}>
+        <Animated.View entering={FadeIn.duration(300)} style={{ width: "100%" }}>
           <VideoOverview
             uri={videoUri}
             width={WIDTH}
@@ -141,7 +155,7 @@ export const AutoplaySkiaDemo = () => {
             codec="hevc"
             totalFrames={TOTAL_FRAMES}
           />
-        </View>
+        </Animated.View>
       )}
     </View>
   );
@@ -166,7 +180,7 @@ function SkiaContent({
 
   const rectSize = 160 * scale;
   const halfRect = rectSize / 2;
-  const orbitRadius = 120 * scale;
+  const orbitRadius = 150 * scale;
   const circleRadius = 14 * scale;
   const cornerRadius = 24 * scale;
   const numCircles = 5;
@@ -203,7 +217,7 @@ function SkiaContent({
 
         {/* Orbiting circles */}
         {Array.from({ length: numCircles }).map((_, i) => {
-          const circleAngle = angle + (i * Math.PI * 2) / numCircles;
+          const circleAngle = -angle + (i * Math.PI * 2) / numCircles;
           const x = cx + Math.cos(circleAngle) * orbitRadius;
           const y = cy + Math.sin(circleAngle) * orbitRadius;
           const circleHue = (hue + i * 40) % 360;
