@@ -57,7 +57,7 @@ export function VideoExampleContent({ code, src }: VideoExampleContentProps) {
                 style={{
                   width: "100%",
                   height: "100%",
-                  objectFit: "contain",
+                  objectFit: "cover",
                 }}
               >
                 <source src={src} type="video/mp4" />
