@@ -147,7 +147,7 @@ Returns a `ViewRecorder` handle plus a `viewRef` to pass to `<SkiaRecordingView>
 | `keyFrameInterval` | `number` | 2 | Seconds between keyframes |
 | `optimizeForNetwork` | `boolean` | true | Move moov atom to front |
 
-## How It Works
+## Notes
 
 1. You wrap your content in `<RecordingView>` and call `recorder.record()`
 2. The library calls your `onFrame` callback, waits for React to render, then captures the native view
