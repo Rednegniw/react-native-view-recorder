@@ -6,11 +6,9 @@ import Animated, {
   withRepeat,
   withTiming,
 } from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "../theme/colors";
 
 export const RecIndicator = () => {
-  const insets = useSafeAreaInsets();
   const opacity = useSharedValue(1);
 
   useEffect(() => {
@@ -22,17 +20,7 @@ export const RecIndicator = () => {
   }));
 
   return (
-    <View
-      style={{
-        position: "absolute",
-        top: insets.top + 12,
-        left: 16,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
-        zIndex: 10,
-      }}
-    >
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
       <Animated.View
         style={[
           {

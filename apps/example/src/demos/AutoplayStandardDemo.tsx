@@ -3,7 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { NumberFlow } from "number-flow-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Text, View } from "react-native";
-import { Easing } from "react-native-reanimated";
+import Animated, { Easing, FadeIn, FadeOut } from "react-native-reanimated";
 import { RecordingView, useViewRecorder } from "react-native-view-recorder";
 import { RecIndicator } from "../components/RecIndicator";
 import { VideoOverview } from "../components/VideoOverview";
@@ -31,14 +31,14 @@ function hslToHex(h: number, s: number, l: number): string {
   return `#${f(0)}${f(8)}${f(4)}`;
 }
 
-type Phase = "idle" | "recording" | "done";
+type Phase = "recording" | "done";
 
 export const AutoplayStandardDemo = () => {
   const recorder = useViewRecorder();
   const mountedRef = useRef(true);
   const recordingRef = useRef(false);
 
-  const [phase, setPhase] = useState<Phase>("idle");
+  const [phase, setPhase] = useState<Phase>("recording");
   const [currentSecond, setCurrentSecond] = useState(1);
   const [currentFrame, setCurrentFrame] = useState(0);
   const [videoUri, setVideoUri] = useState<string | null>(null);
@@ -74,19 +74,18 @@ export const AutoplayStandardDemo = () => {
       setVideoUri(result);
       setPhase("done");
     } catch {
-      if (mountedRef.current) setPhase("idle");
+      if (mountedRef.current) setPhase("recording");
     } finally {
       recordingRef.current = false;
     }
   }, [recorder]);
 
-  // Auto-start after mount
+  // Auto-start on mount
   useEffect(() => {
     mountedRef.current = true;
-    const timeout = setTimeout(startRecording, 1500);
+    startRecording();
     return () => {
       mountedRef.current = false;
-      clearTimeout(timeout);
     };
   }, [startRecording]);
 
@@ -96,8 +95,6 @@ export const AutoplayStandardDemo = () => {
     const timeout = setTimeout(startRecording, 4000);
     return () => clearTimeout(timeout);
   }, [phase, startRecording]);
-
-  const isRecording = phase === "recording";
   const progress = currentFrame / TOTAL_FRAMES;
   const baseHue = 200 + progress * 120;
   const topColor = hslToHex(baseHue, 40, 72);
@@ -110,44 +107,60 @@ export const AutoplayStandardDemo = () => {
         backgroundColor: colors.background,
         justifyContent: "center",
         alignItems: "center",
+        paddingHorizontal: 20,
       }}
     >
-      {/* REC indicator (outside RecordingView, so it shows on screen but not in video) */}
-      {isRecording && <RecIndicator />}
-
       {/* Recording content */}
       {phase !== "done" && (
-        <View style={{ borderRadius: 16, overflow: "hidden" }}>
-          <RecordingView
-            sessionId={recorder.sessionId}
-            style={{ width: "100%", aspectRatio: WIDTH / HEIGHT }}
-            pointerEvents="none"
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          exiting={FadeOut.duration(300)}
+          style={{ width: "100%" }}
+        >
+          {/* REC indicator (outside RecordingView, so it shows on screen but not in video) */}
+          <View style={{ marginBottom: 8 }}>
+            <RecIndicator />
+          </View>
+
+          <View
+            style={{
+              borderRadius: 16,
+              overflow: "hidden",
+              borderWidth: 2,
+              borderColor: colors.recording,
+            }}
           >
-            <View style={{ width: "100%", aspectRatio: WIDTH / HEIGHT }} collapsable={false}>
-              <LinearGradient
-                colors={[topColor, bottomColor]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-              >
-                <NumberFlow
-                  value={currentSecond}
-                  trend={1}
-                  spinTiming={SPIN_TIMING}
-                  style={{ color: "#fff", fontSize: 120, fontWeight: "800" }}
-                />
-                <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 32, fontWeight: "600" }}>
-                  / {DURATION_SECONDS}
-                </Text>
-              </LinearGradient>
-            </View>
-          </RecordingView>
-        </View>
+            <RecordingView
+              sessionId={recorder.sessionId}
+              style={{ width: "100%", aspectRatio: WIDTH / HEIGHT }}
+              pointerEvents="none"
+            >
+              <View style={{ width: "100%", aspectRatio: WIDTH / HEIGHT }} collapsable={false}>
+                <LinearGradient
+                  colors={[topColor, bottomColor]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+                >
+                  <NumberFlow
+                    value={currentSecond}
+                    trend={1}
+                    spinTiming={SPIN_TIMING}
+                    style={{ color: "#fff", fontSize: 120, fontWeight: "800" }}
+                  />
+                  <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 32, fontWeight: "600" }}>
+                    / {DURATION_SECONDS}
+                  </Text>
+                </LinearGradient>
+              </View>
+            </RecordingView>
+          </View>
+        </Animated.View>
       )}
 
       {/* Video result */}
       {videoUri && phase === "done" && (
-        <View style={{ width: "100%", paddingHorizontal: 20 }}>
+        <Animated.View entering={FadeIn.duration(300)} style={{ width: "100%" }}>
           <VideoOverview
             uri={videoUri}
             width={WIDTH}
@@ -156,7 +169,7 @@ export const AutoplayStandardDemo = () => {
             codec="hevc"
             totalFrames={TOTAL_FRAMES}
           />
-        </View>
+        </Animated.View>
       )}
     </View>
   );
