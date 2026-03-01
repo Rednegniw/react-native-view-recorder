@@ -14,7 +14,10 @@ export const DemoScreen = ({ route, navigation }: Props) => {
   const insets = useSafeAreaInsets();
 
   useLayoutEffect(() => {
-    navigation.setOptions({ title: entry?.title ?? "Demo" });
+    navigation.setOptions({
+      title: entry?.title ?? "Demo",
+      headerShown: !entry?.fullscreen,
+    });
   }, [navigation, entry]);
 
   if (!entry) {
@@ -26,6 +29,14 @@ export const DemoScreen = ({ route, navigation }: Props) => {
   }
 
   const DemoComponent = entry.Component;
+
+  if (entry.fullscreen) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <DemoComponent />
+      </View>
+    );
+  }
 
   return (
     <ScrollView

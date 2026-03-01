@@ -5,6 +5,7 @@ export interface DemoEntry {
   title: string;
   description: string;
   Component: ComponentType;
+  fullscreen?: boolean;
 }
 
 export interface DemoSection {
@@ -13,6 +14,31 @@ export interface DemoSection {
 }
 
 export const DEMO_SECTIONS: DemoSection[] = [
+  {
+    title: "Showcase",
+    data: [
+      {
+        key: "autoplay-standard",
+        title: "Standard Recording (Autoplay)",
+        description:
+          "Autoplaying demo for screen recording. Shows a gradient countdown being recorded.",
+        fullscreen: true,
+        get Component() {
+          return require("../demos/AutoplayStandardDemo").AutoplayStandardDemo;
+        },
+      },
+      {
+        key: "autoplay-skia",
+        title: "Skia Recording (Autoplay)",
+        description:
+          "Autoplaying demo for screen recording. Shows a Skia canvas animation being recorded.",
+        fullscreen: true,
+        get Component() {
+          return require("../demos/AutoplaySkiaDemo").AutoplaySkiaDemo;
+        },
+      },
+    ],
+  },
   {
     title: "Recording",
     data: [
