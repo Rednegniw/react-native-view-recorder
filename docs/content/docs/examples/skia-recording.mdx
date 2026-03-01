@@ -1,0 +1,139 @@
+---
+title: Skia Recording
+description: Record an animated Skia canvas with zero-copy Metal capture to MP4
+full: true
+---
+
+Use `useSkiaViewRecorder` and `SkiaRecordingView` to capture Skia canvases. On iOS, this uses a zero-copy Metal pipeline that renders Skia directly into the encoder's pixel buffers.
+
+```VideoExample video=/videos/skia-recording.mp4
+import { useState, useCallback } from "react";
+import { View, Pressable, Text } from "react-native";
+import { File, Paths } from "expo-file-system";
+import {
+  Canvas,
+  Circle,
+  Group,
+  LinearGradient,
+  RoundedRect,
+  vec,
+} from "@shopify/react-native-skia";
+import {
+  SkiaRecordingView,
+  useSkiaViewRecorder,
+} from "react-native-view-recorder";
+
+const FPS = 60;
+const DURATION = 3;
+const TOTAL_FRAMES = FPS * DURATION;
+const SIZE = 300;
+
+function hsl(h: number, s: number, l: number) {
+  const a = (s / 100) * Math.min(l / 100, 1 - l / 100);
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    return l / 100 - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+  };
+  const hex = (v: number) =>
+    Math.round(v * 255)
+      .toString(16)
+      .padStart(2, "0");
+  return `#${hex(f(0))}${hex(f(8))}${hex(f(4))}`;
+}
+
+export default function SkiaRecording() {
+  const recorder = useSkiaViewRecorder();
+  const [progress, setProgress] = useState(0);
+  const [recording, setRecording] = useState(false);
+
+  const handleRecord = useCallback(async () => {
+    setRecording(true);
+
+    const output = new File(Paths.cache, "skia.mp4");
+    if (output.exists) output.delete();
+
+    await recorder.record({
+      output: output.uri.replace("file://", ""),
+      fps: FPS,
+      totalFrames: TOTAL_FRAMES,
+      width: 640,
+      height: 480,
+      onFrame: async ({ frameIndex, totalFrames }) => {
+        setProgress(frameIndex / totalFrames);
+      },
+    });
+
+    setRecording(false);
+  }, [recorder]);
+
+  const angle = progress * Math.PI * 4;
+  const hue = 200 + progress * 160;
+  const cx = SIZE / 2;
+  const cy = SIZE / 2;
+
+  return (
+    <View style={{ flex: 1, backgroundColor: "#000" }}>
+      <SkiaRecordingView
+        viewRef={recorder.viewRef}
+        sessionId={recorder.sessionId}
+        style={{ width: SIZE, height: SIZE }}
+      >
+        <Canvas style={{ flex: 1 }}>
+          {/* Rotating rounded rectangle with gradient */}
+          <Group
+            transform={[
+              { translateX: cx },
+              { translateY: cy },
+              { rotate: angle },
+              { translateX: -50 },
+              { translateY: -50 },
+            ]}
+          >
+            <RoundedRect x={0} y={0} width={100} height={100} r={16}>
+              <LinearGradient
+                start={vec(0, 0)}
+                end={vec(100, 100)}
+                colors={[hsl(hue, 70, 60), hsl(hue + 60, 80, 50)]}
+              />
+            </RoundedRect>
+          </Group>
+
+          {/* Orbiting circles */}
+          {Array.from({ length: 5 }).map((_, i) => {
+            const a = angle + (i * Math.PI * 2) / 5;
+            return (
+              <Circle
+                key={i}
+                cx={cx + Math.cos(a) * 100}
+                cy={cy + Math.sin(a) * 100}
+                r={10}
+                color={hsl((hue + i * 40) % 360, 80, 65)}
+              />
+            );
+          })}
+        </Canvas>
+      </SkiaRecordingView>
+
+      <Pressable onPress={handleRecord} disabled={recording}>
+        <Text style={{ color: "#fff" }}>
+          {recording ? "Recording..." : "Record"}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+```
+
+### Key differences from standard recording
+
+| | Standard | Skia |
+|---|---|---|
+| Hook | `useViewRecorder()` | `useSkiaViewRecorder()` |
+| Wrapper | `RecordingView` | `SkiaRecordingView` |
+| Extra prop | - | `viewRef={recorder.viewRef}` |
+| iOS capture | `drawHierarchy` to bitmap | Zero-copy Metal texture |
+| Android capture | `PixelCopy` | `PixelCopy` (same) |
+
+<Callout type="info">
+On iOS, standard `drawHierarchy` cannot capture `CAMetalLayer` content (used by Skia). `SkiaRecordingView` uses a separate Metal pipeline that renders Skia directly into the encoder's `CVPixelBuffer`, avoiding the bitmap step entirely.
+</Callout>
