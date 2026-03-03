@@ -1,0 +1,70 @@
+---
+title: Performance
+description: Tips for getting the most out of your recordings
+full: true
+---
+
+The library tries to do a lot of the heavy lifting for you. That said, there are a few things on your end that can make a noticeable difference.
+
+## Keep `onFrame` lightweight
+
+The recording loop awaits your `onFrame` callback before capturing each frame. If the callback does expensive work, it delays every single frame in the recording.
+
+The most common mistake is triggering complex re-renders from inside `onFrame`. React state updates are cheap to dispatch, but if the resulting render tree is heavy (lots of children, layout recalculations, etc.), the main thread gets busy right when we need it for frame capture.
+
+```tsx
+// Good: minimal state update
+onFrame: ({ frameIndex }) => {
+  setFrame(frameIndex);
+},
+
+// Also good: skip the state update entirely if you don't need it for rendering
+const frameRef = useRef(0);
+onFrame: ({ frameIndex }) => {
+  frameRef.current = frameIndex;
+},
+
+// Bad: deriving expensive state on every frame
+onFrame: async ({ frameIndex }) => {
+  const data = await fetchSomething(frameIndex);
+  setComplexState(transformData(data));
+},
+```
+
+If you need to do something expensive per-frame, try to keep it outside the `onFrame` callback. Do the work in `onProgress` instead (which runs after the frame is already captured), or precompute values before recording starts.
+
+## Resolution matters more than you'd think
+
+Encoding work scales with the number of pixels, not the dimensions. Doubling both width and height means 4x the pixels to encode, not 2x. This looks like a fairly obvious point, but it's easy to underestimate how much more expensive higher resolutions can be, especially on mobile.
+
+| Resolution | Pixels | Relative cost |
+|-----------|--------|--------------|
+| 640x480 | 307K | 1x |
+| 720x1280 | 922K | 3x |
+| 1080x1920 | 2.07M | 6.7x |
+| 2160x3840 | 8.29M | 27x |
+
+For content that's going to be viewed on mobile screens, 720p with a higher [`quality`](/docs/api/record-options#options) setting (say 0.8) often looks better than 1080p at the default auto bitrate. You get sharper encoding with a smaller, faster file.
+
+If you're recording at a specific resolution that doesn't match the RecordingView's rendered size, pass explicit `width` and `height` to `record()`. The library handles the scaling.
+
+## Set explicit bitrate for high-motion content
+
+When you don't specify a `bitrate`, the library auto-calculates one as `width * height * fps / 10`. That works well for mostly-static UI recordings (text, buttons, gradients), but it can be too conservative for content with lots of motion: fast animations, particle effects, video playback, etc.
+
+If your recording looks blocky or washed out, try one of these:
+
+- Set `quality: 0.8` or higher to let the encoder use a more generous bitrate. Or 1 for maximum quality, but that can lead to some very large files.
+- Set an explicit `bitrate` in bits/second (e.g., `8_000_000` for 8 Mbps)
+
+See the [Codec Selection](/docs/guides/codec-selection#bitrate) guide for bitrate recommendations by resolution.
+
+## Android: keep the view in-bounds
+
+<Callout type="info">
+This only affects the standard `RecordingView` on Android. `SkiaRecordingView` is not impacted.
+</Callout>
+
+On Android, the standard capture path uses `PixelCopy` for GPU-based frame capture. But this only works when the `RecordingView` fits entirely within the window. If the view extends beyond the window bounds (for example, it's wider than the screen or partially off the edge), the library falls back to `View.draw()` with CPU-side rendering and scaling, which is significantly slower.
+
+So, make sure your `RecordingView` is fully within the screen during recording.

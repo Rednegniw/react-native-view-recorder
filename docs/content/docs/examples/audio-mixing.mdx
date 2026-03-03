@@ -1,0 +1,219 @@
+---
+title: Audio Mixing
+description: Generate a melody with real-time waveform visualization using mixAudio
+full: true
+---
+
+Use `mixAudio` to generate audio samples in JavaScript and mux them into the video. This example synthesizes the first phrase of Ode to Joy with a sub-octave for warmth, and visualizes the waveform in real time.
+
+```VideoExample video=/videos/audio-mixing.mp4
+import { useState, useCallback, useRef } from "react";
+import { View, Pressable, Text } from "react-native";
+import { File, Paths } from "expo-file-system";
+import { RecordingView, useViewRecorder } from "react-native-view-recorder";
+
+const FPS = 60;
+const TOTAL_FRAMES = 320;
+const NUM_BARS = 32;
+const FRAMES_PER_NOTE = 20;
+const ENV_FRAMES = 4;
+const SMOOTHING = 0.3;
+const FREQ_MIN = 230;
+const FREQ_MAX = 410;
+const GAUSSIAN_WIDTH = 18;
+
+const MELODY: (number | null)[] = [
+  329.63, 329.63, 349.23, 392.00, // E E F G
+  392.00, 349.23, 329.63, 293.66, // G F E D
+  261.63, 261.63, 293.66, 329.63, // C C D E
+  329.63, 293.66, 293.66, null,   // E D D .
+];
+
+export default function AudioMixing() {
+  const recorder = useViewRecorder();
+  const [recording, setRecording] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const phases = useRef([0, 0]);
+  const bars = useRef<number[]>(new Array(NUM_BARS).fill(0));
+
+  const handleRecord = useCallback(async () => {
+    setRecording(true);
+    phases.current = [0, 0];
+    bars.current = new Array(NUM_BARS).fill(0);
+
+    const output = new File(Paths.cache, "synth.mp4");
+    if (output.exists) output.delete();
+
+    await recorder.record({
+      output: output.uri.replace("file://", ""),
+      fps: FPS,
+      totalFrames: TOTAL_FRAMES,
+      width: 640,
+      height: 480,
+
+      onProgress: ({ framesEncoded, totalFrames }) => {
+        setProgress(
+          Math.round((framesEncoded / totalFrames) * 100)
+        );
+      },
+
+      mixAudio: ({ frameIndex, samplesNeeded, sampleRate }) => {
+        const ni = Math.min(
+          Math.floor(frameIndex / FRAMES_PER_NOTE),
+          MELODY.length - 1
+        );
+        const freq = MELODY[ni];
+        const frameInNote = frameIndex % FRAMES_PER_NOTE;
+        const samples = new Float32Array(samplesNeeded);
+
+        if (freq != null) {
+          const ph = phases.current;
+          for (let i = 0; i < samplesNeeded; i++) {
+            const t = frameInNote + i / samplesNeeded;
+            let env = 1;
+            if (t < ENV_FRAMES) env = t / ENV_FRAMES;
+            else if (t >= FRAMES_PER_NOTE - ENV_FRAMES)
+              env = (FRAMES_PER_NOTE - t) / ENV_FRAMES;
+
+            const val =
+              Math.sin(ph[0]) + 0.3 * Math.sin(ph[1]);
+            samples[i] = (val / 1.3) * env * 0.25;
+            ph[0] += (2 * Math.PI * freq) / sampleRate;
+            ph[1] += (Math.PI * freq) / sampleRate;
+          }
+          ph[0] %= 2 * Math.PI;
+          ph[1] %= 2 * Math.PI;
+        }
+
+        let envEnd = 1;
+        const te = frameInNote + 1;
+        if (te < ENV_FRAMES) envEnd = te / ENV_FRAMES;
+        else if (te >= FRAMES_PER_NOTE - ENV_FRAMES)
+          envEnd = (FRAMES_PER_NOTE - te) / ENV_FRAMES;
+
+        const displayed = bars.current;
+        if (freq != null) {
+          const center =
+            ((freq - FREQ_MIN) / (FREQ_MAX - FREQ_MIN)) *
+            (NUM_BARS - 1);
+          for (let b = 0; b < NUM_BARS; b++) {
+            const d = b - center;
+            const target =
+              Math.exp(-(d * d) / GAUSSIAN_WIDTH) * envEnd;
+            displayed[b] +=
+              (target - displayed[b]) * SMOOTHING;
+          }
+        } else {
+          for (let b = 0; b < NUM_BARS; b++) {
+            displayed[b] -= displayed[b] * SMOOTHING;
+          }
+        }
+
+        return samples;
+      },
+    });
+
+    setRecording(false);
+  }, [recorder]);
+
+  return (
+    <View style={{ flex: 1, backgroundColor: "#000", padding: 20 }}>
+      {recording && (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 6,
+            marginBottom: 8,
+          }}
+        >
+          <View
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              backgroundColor: "#FF3B30",
+            }}
+          />
+          <Text
+            style={{
+              color: "#FF3B30",
+              fontSize: 12,
+              fontWeight: "700",
+              letterSpacing: 1,
+            }}
+          >
+            REC {progress}%
+          </Text>
+        </View>
+      )}
+
+      <View
+        style={{
+          borderRadius: 16,
+          overflow: "hidden",
+          borderWidth: recording ? 2 : 0,
+          borderColor: "#FF3B30",
+        }}
+      >
+        <RecordingView
+          sessionId={recorder.sessionId}
+          style={{ width: "100%", aspectRatio: 640 / 480 }}
+        >
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: "#000",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                height: 140,
+                gap: 2,
+                width: "85%",
+              }}
+            >
+              {bars.current.map((h, i) => (
+                <View
+                  key={i}
+                  style={{
+                    flex: 1,
+                    height: Math.max(h * 120, 4),
+                    borderRadius: 3,
+                    backgroundColor: "#e0e0e0",
+                  }}
+                />
+              ))}
+            </View>
+          </View>
+        </RecordingView>
+      </View>
+
+      <Pressable
+        onPress={handleRecord}
+        disabled={recording}
+        style={{ marginTop: 16 }}
+      >
+        <Text style={{ color: "#fff", fontSize: 16 }}>
+          {recording ? `Recording... ${progress}%` : "Record"}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+```
+
+### Notes
+
+- **`mixAudio` callback** runs once per frame and returns a `Float32Array` of audio samples. The library muxes them into the video's audio track. No microphone permissions needed.
+- **Phase accumulators** (stored in a ref) keep the oscillator phases continuous across frames. Two oscillators run per note: the fundamental and a sub-octave at 30% amplitude for warmth.
+- **Per-sample envelope** ramps amplitude smoothly over 3 frames at each note boundary, creating clear note separation without clicks.
+- **Spectrum-style bars** show a gaussian peak centered at the current note's frequency. As the melody plays, the peak slides across the bars. Exponential smoothing creates a trailing glow effect.
+
+<Callout type="info">
+`mixAudio` and `audioFile` cannot be combined. Use `mixAudio` for procedurally generated audio (synths, sound effects, tone generators). Use [`audioFile`](/docs/api/record-options#audiofile) for pre-recorded audio files.
+</Callout>

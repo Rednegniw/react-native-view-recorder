@@ -37,42 +37,4 @@ const recorder = useViewRecorder();
 </RecordingView>
 ```
 
-## useViewRecorder
-
-Hook that creates a view recorder session.
-
-### Signature
-
-```tsx
-function useViewRecorder(): ViewRecorder
-```
-
-### Returns
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `sessionId` | `string` | Unique session ID. Pass this as the `sessionId` prop on `<RecordingView>`. |
-| `record` | `(options: RecordOptions) => Promise<string>` | Starts recording. Returns the output file path when complete. |
-
-### Usage
-
-```tsx
-const recorder = useViewRecorder();
-
-// Link to the view
-<RecordingView sessionId={recorder.sessionId}>
-  <Content frame={frame} />
-</RecordingView>
-
-// Record
-const outputPath = await recorder.record({
-  output: "/path/to/output.mp4",
-  fps: 30,
-  totalFrames: 150,
-  onFrame: async ({ frameIndex }) => setFrame(frameIndex),
-});
-```
-
-<Callout type="warn">
-Only one recording can be in progress per session at a time. Calling `record()` while a recording is already active will throw an error.
-</Callout>
+Pair this component with the [useViewRecorder](/docs/api/use-view-recorder) hook.
