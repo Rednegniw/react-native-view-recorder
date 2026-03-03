@@ -12,6 +12,12 @@ type SessionOptions = {
   quality?: number;
   keyFrameInterval?: number;
   optimizeForNetwork?: boolean;
+  hasMixAudio?: boolean;
+  audioFilePath?: string;
+  audioFileStartTime?: number;
+  audioSampleRate?: number;
+  audioChannels?: number;
+  audioBitrate?: number;
 };
 
 export interface Spec extends TurboModule {
@@ -19,6 +25,8 @@ export interface Spec extends TurboModule {
   captureFrame(sessionId: string): Promise<void>;
   captureSkiaFrame(sessionId: string, skiaViewTag: number): Promise<void>;
   finishSession(sessionId: string): Promise<string>;
+  cancelSession(sessionId: string): Promise<void>;
+  writeAudioSamples(sessionId: string, samples: number[]): Promise<void>;
 }
 
 export default TurboModuleRegistry.get<Spec>("ViewRecorder");

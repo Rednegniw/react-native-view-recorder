@@ -2,12 +2,34 @@ import { useCallback, useMemo, useRef } from "react";
 import { findNodeHandle, type ViewProps } from "react-native";
 
 import NativeViewRecorder from "./NativeViewRecorder";
-import type { RecordOptions, ViewRecorder } from "./RecordingView";
+import {
+  AbortError,
+  type RecordOptions,
+  resolveAudioConfig,
+  runRecordingLoop,
+  type ViewRecorder,
+} from "./RecordingView";
 import NativeRecordingView from "./RecordingViewNativeComponent";
 
 const LINKING_ERROR =
   "react-native-view-recorder: Native module not linked.\n" +
   "Rebuild your development client or run 'bunx expo run:ios' / 'bunx expo run:android'.";
+
+let skiaAvailable: boolean | null = null;
+
+function checkSkia() {
+  if (skiaAvailable !== null) return skiaAvailable;
+  try {
+    require("@shopify/react-native-skia");
+    return (skiaAvailable = true);
+  } catch {
+    return (skiaAvailable = false);
+  }
+}
+
+const SKIA_NOT_INSTALLED =
+  "SkiaRecordingView requires @shopify/react-native-skia to be installed.\n" +
+  "Install it with: bunx expo install @shopify/react-native-skia";
 
 type RecordingViewRef = React.ElementRef<typeof NativeRecordingView>;
 
@@ -32,6 +54,8 @@ export function SkiaRecordingView({
   style,
   ...props
 }: SkiaRecordingViewProps) {
+  if (!checkSkia()) throw new Error(SKIA_NOT_INSTALLED);
+
   return (
     <NativeRecordingView ref={viewRef} sessionId={sessionId} {...props} style={style}>
       {children}
@@ -65,21 +89,45 @@ export function useSkiaViewRecorder(): ViewRecorder & {
 } {
   const sessionIdRef = useRef<string>(`vr_${++nextId}_${Date.now()}`);
   const isRecordingRef = useRef(false);
+  const stopRef = useRef(false);
   const viewRef = useRef<RecordingViewRef | null>(null);
+
+  const stop = useCallback(() => {
+    stopRef.current = true;
+  }, []);
 
   const record = useCallback(async (options: RecordOptions): Promise<string> => {
     if (!NativeViewRecorder) throw new Error(LINKING_ERROR);
     if (isRecordingRef.current) throw new Error("A recording is already in progress.");
 
+    if (options.signal?.aborted) {
+      throw new AbortError();
+    }
+
+    if (options.codec === "hevcWithAlpha" && options.output.toLowerCase().endsWith(".mp4")) {
+      throw new Error(
+        "hevcWithAlpha requires .mov output. Alpha video is not supported in .mp4 containers.",
+      );
+    }
+
+    if (options.audioFile && options.mixAudio) {
+      throw new Error("audioFile and mixAudio cannot be combined. Use one audio source at a time.");
+    }
+
     isRecordingRef.current = true;
+    stopRef.current = false;
 
     const sessionId = sessionIdRef.current;
-    const { onFrame, onProgress, totalFrames, ...nativeOptions } = options;
+    const { onFrame, onProgress, totalFrames, signal, mixAudio, audioFile, ...restOptions } =
+      options;
+
+    const { audioSampleRate, audioChannels, nativeAudioOptions } = resolveAudioConfig(options);
+
+    const nativeOptions = { ...restOptions, ...nativeAudioOptions };
 
     try {
       await NativeViewRecorder.startSession({ sessionId, ...nativeOptions });
 
-      // Get the native view tag for the Skia view
       const viewTag = viewRef.current ? findNodeHandle(viewRef.current) : null;
       if (!viewTag) {
         throw new Error(
@@ -87,21 +135,36 @@ export function useSkiaViewRecorder(): ViewRecorder & {
         );
       }
 
-      for (let i = 0; i < totalFrames; i++) {
-        await onFrame?.({ frameIndex: i, totalFrames });
-        await new Promise<void>((r) => requestAnimationFrame(() => r()));
-        await NativeViewRecorder.captureSkiaFrame(sessionId, viewTag);
-        onProgress?.({ framesEncoded: i + 1, totalFrames });
-      }
+      const audioMixInfo =
+        mixAudio && audioSampleRate && audioChannels
+          ? { sampleRate: audioSampleRate, channels: audioChannels, fps: options.fps }
+          : undefined;
+
+      await runRecordingLoop({
+        sessionId,
+        captureFrame: () => NativeViewRecorder!.captureSkiaFrame(sessionId, viewTag),
+        totalFrames,
+        signal,
+        stopRef,
+        onFrame,
+        onProgress,
+        mixAudio,
+        audioMixInfo,
+      });
 
       return await NativeViewRecorder.finishSession(sessionId);
     } catch (error) {
-      await NativeViewRecorder?.finishSession(sessionId).catch(() => {});
+      if (error instanceof AbortError) throw error;
+      await NativeViewRecorder?.cancelSession(sessionId).catch(() => {});
       throw error;
     } finally {
       isRecordingRef.current = false;
+      stopRef.current = false;
     }
   }, []);
 
-  return useMemo(() => ({ sessionId: sessionIdRef.current, record, viewRef }), [record]);
+  return useMemo(
+    () => ({ sessionId: sessionIdRef.current, record, stop, viewRef }),
+    [record, stop],
+  );
 }
