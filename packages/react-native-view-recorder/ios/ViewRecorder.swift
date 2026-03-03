@@ -1,6 +1,8 @@
-// On-device view-to-MP4 encoder.
-// Captures a React Native view's content frame-by-frame using drawHierarchy
-// and encodes directly into CVPixelBuffer memory (zero intermediate copies).
+/**
+ * On-device view-to-MP4 encoder.
+ * Captures a React Native view's content frame-by-frame using drawHierarchy
+ * and encodes directly into CVPixelBuffer memory (zero intermediate copies).
+ */
 
 import Foundation
 import AVFoundation
@@ -184,30 +186,7 @@ public final class ViewRecorder: RCTEventEmitter {
     guard expectedSampleCount > 0, interleavedSamples.count == expectedSampleCount else { return nil }
     guard let format = ensureAudioFormatDescription(session) else { return nil }
 
-    var timing = CMSampleTimingInfo(
-      duration: CMTime(value: CMTimeValue(frameCount), timescale: Int32(session.audioSampleRate)),
-      presentationTimeStamp: presentationTimeStamp,
-      decodeTimeStamp: .invalid
-    )
-    var sampleSizeArray = [session.audioChannels * 4]
-    var sampleBuffer: CMSampleBuffer?
-
-    let sampleBufferStatus = CMSampleBufferCreate(
-      allocator: kCFAllocatorDefault,
-      dataBuffer: nil,
-      dataReady: false,
-      makeDataReadyCallback: nil,
-      refcon: nil,
-      formatDescription: format,
-      sampleCount: frameCount,
-      sampleTimingEntryCount: 1,
-      sampleTimingArray: &timing,
-      sampleSizeEntryCount: 1,
-      sampleSizeArray: &sampleSizeArray,
-      sampleBufferOut: &sampleBuffer
-    )
-    guard sampleBufferStatus == noErr, let sampleBuffer else { return nil }
-
+    // Create block buffer with Float32 PCM data
     let byteSize = interleavedSamples.count * MemoryLayout<Float32>.size
     let dataPtr = UnsafeMutablePointer<Float32>.allocate(capacity: interleavedSamples.count)
     interleavedSamples.withUnsafeBufferPointer { buffer in
@@ -232,9 +211,30 @@ public final class ViewRecorder: RCTEventEmitter {
       return nil
     }
 
-    guard CMSampleBufferSetDataBuffer(sampleBuffer, newValue: blockBuffer) == noErr else {
-      return nil
-    }
+    // Create sample buffer with data attached and ready
+    var timing = CMSampleTimingInfo(
+      duration: CMTime(value: CMTimeValue(frameCount), timescale: Int32(session.audioSampleRate)),
+      presentationTimeStamp: presentationTimeStamp,
+      decodeTimeStamp: .invalid
+    )
+    var sampleSizeArray = [session.audioChannels * 4]
+    var sampleBuffer: CMSampleBuffer?
+
+    let sampleBufferStatus = CMSampleBufferCreate(
+      allocator: kCFAllocatorDefault,
+      dataBuffer: blockBuffer,
+      dataReady: true,
+      makeDataReadyCallback: nil,
+      refcon: nil,
+      formatDescription: format,
+      sampleCount: frameCount,
+      sampleTimingEntryCount: 1,
+      sampleTimingArray: &timing,
+      sampleSizeEntryCount: 1,
+      sampleSizeArray: &sampleSizeArray,
+      sampleBufferOut: &sampleBuffer
+    )
+    guard sampleBufferStatus == noErr, let sampleBuffer else { return nil }
 
     return sampleBuffer
   }
@@ -396,7 +396,6 @@ public final class ViewRecorder: RCTEventEmitter {
       return
     }
 
-    // Codec selection
     let codecType: AVVideoCodecType
     let useAlpha: Bool
 
@@ -428,10 +427,8 @@ public final class ViewRecorder: RCTEventEmitter {
       return
     }
 
-    // Clean any existing output file
     try? FileManager.default.removeItem(atPath: output)
 
-    // Set up AVAssetWriter
     let url = URL(fileURLWithPath: output)
     let writer: AVAssetWriter
 
@@ -444,7 +441,6 @@ public final class ViewRecorder: RCTEventEmitter {
 
     writer.shouldOptimizeForNetworkUse = optimizeForNetwork
 
-    // Compression properties
     var compression: [String: Any] = [
       AVVideoAverageBitRateKey: bitrate,
       AVVideoMaxKeyFrameIntervalDurationKey: keyFrameInterval
@@ -501,12 +497,11 @@ public final class ViewRecorder: RCTEventEmitter {
       ]
 
       let aInput = AVAssetWriterInput(mediaType: .audio, outputSettings: audioSettings)
-      aInput.expectsMediaDataInRealTime = audioFilePath != nil
+      aInput.expectsMediaDataInRealTime = true
       writer.add(aInput)
       audioWriterInput = aInput
     }
 
-    // Start the writing session
     guard writer.startWriting() else {
       reject("writer_error", writer.error?.localizedDescription ?? "Failed to start writing", writer.error)
       return
@@ -561,8 +556,10 @@ public final class ViewRecorder: RCTEventEmitter {
     resolver resolve: @escaping RCTPromiseResolveBlock,
     rejecter reject: @escaping RCTPromiseRejectBlock
   ) {
-    // All lookups happen inside the main-queue block to prevent
-    // a stale session reference if finishSession races with us.
+    /**
+     * All lookups happen inside the main-queue block to prevent
+     * a stale session reference if finishSession races with us.
+     */
     DispatchQueue.main.async { [weak self] in
       guard let session = self?.getSession(sessionId) else {
         reject("no_session", "No active session for id: \(sessionId)", nil)
@@ -577,14 +574,12 @@ public final class ViewRecorder: RCTEventEmitter {
       let width = session.width
       let height = session.height
 
-      // Verify the writer is still accepting frames
       guard session.writer.status == .writing else {
         let err = session.writer.error
         reject("writer_failed", "Writer is no longer writing (status: \(session.writer.status.rawValue))", err)
         return
       }
 
-      // Get a pooled pixel buffer from the adaptor
       guard let pool = session.adaptor.pixelBufferPool else {
         reject("pool_error", "Pixel buffer pool unavailable", nil)
         return
@@ -598,7 +593,6 @@ public final class ViewRecorder: RCTEventEmitter {
         return
       }
 
-      // Draw the view hierarchy directly into pixel buffer memory
       CVPixelBufferLockBaseAddress(pixelBuffer, [])
 
       guard let ctx = CGContext(
@@ -615,8 +609,10 @@ public final class ViewRecorder: RCTEventEmitter {
         return
       }
 
-      // Flip Y axis for UIKit coordinate system (origin at top-left)
-      // then scale from view points to video pixels
+      /**
+       * Flip Y axis for UIKit coordinate system (origin at top-left)
+       * then scale from view points to video pixels.
+       */
       let boundsWidth = view.bounds.width
       let boundsHeight = view.bounds.height
 
@@ -765,10 +761,10 @@ public final class ViewRecorder: RCTEventEmitter {
 
   // MARK: - writeAudioSamples
 
-  @objc(writeAudioSamples:samples:resolver:rejecter:)
+  @objc(writeAudioSamples:samplesBase64:resolver:rejecter:)
   func writeAudioSamples(
     _ sessionId: String,
-    samples: NSArray,
+    samplesBase64: String,
     resolver resolve: @escaping RCTPromiseResolveBlock,
     rejecter reject: @escaping RCTPromiseRejectBlock
   ) {
@@ -782,7 +778,12 @@ public final class ViewRecorder: RCTEventEmitter {
       return
     }
 
-    let sampleCount = samples.count
+    guard let data = Data(base64Encoded: samplesBase64) else {
+      reject("invalid_base64", "Invalid base64-encoded audio data", nil)
+      return
+    }
+
+    let sampleCount = data.count / MemoryLayout<Float32>.size
     guard sampleCount > 0 else {
       resolve(nil)
       return
@@ -796,9 +797,8 @@ public final class ViewRecorder: RCTEventEmitter {
 
     let framesPerBuffer = sampleCount / channels
 
-    var interleavedSamples = Array<Float32>(repeating: 0, count: sampleCount)
-    for i in 0..<sampleCount {
-      interleavedSamples[i] = (samples[i] as? NSNumber)?.floatValue ?? 0
+    let interleavedSamples: [Float32] = data.withUnsafeBytes { ptr in
+      Array(ptr.bindMemory(to: Float32.self))
     }
 
     appendAudioSamples(
@@ -878,7 +878,6 @@ public final class ViewRecorder: RCTEventEmitter {
 
       guard session.writer.status == .writing else { break }
 
-      // Rebase timestamp to start at zero
       let pts = CMTime(value: CMTimeValue(samplesWritten), timescale: Int32(session.audioSampleRate))
       var timing = CMSampleTimingInfo(
         duration: CMSampleBufferGetDuration(sampleBuffer),
@@ -897,7 +896,6 @@ public final class ViewRecorder: RCTEventEmitter {
 
       guard let outputBuffer = rebasedBuffer else { continue }
 
-      // Wait for writer readiness
       let waitStart = Date()
       while !audioInput.isReadyForMoreMediaData {
         guard session.writer.status == .writing else { return }

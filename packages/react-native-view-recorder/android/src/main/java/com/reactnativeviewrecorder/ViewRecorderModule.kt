@@ -161,7 +161,6 @@ class ViewRecorderModule(
 
         Log.d(TAG, "Starting session $sessionId: ${width}x$height @ ${fps}fps, codec=$codecMime")
 
-        // Video encoder + muxer setup
         callbackThread = HandlerThread("ViewRecorder-Callback-$sessionId").also { it.start() }
         val callbackHandler = Handler(callbackThread!!.looper)
 
@@ -272,7 +271,9 @@ class ViewRecorderModule(
 
         sessions[sessionId] = session
 
-        /** Start audio file muxing concurrently with video frame capture. */
+        /**
+         * Start audio file muxing concurrently with video frame capture.
+         */
         if (audioFilePath != null) {
           scope.launch {
             try {
@@ -601,7 +602,6 @@ class ViewRecorderModule(
           }
         }
 
-        // Grow buffer if the next sample is larger
         val neededSize = extractor.sampleSize.toInt()
         if (neededSize > readBuffer.capacity()) {
           readBuffer = ByteBuffer.allocate(neededSize)
@@ -645,7 +645,7 @@ class ViewRecorderModule(
 
   override fun writeAudioSamples(
     sessionId: String,
-    samples: ReadableArray,
+    samplesBase64: String,
     promise: Promise,
   ) {
     val session = sessions[sessionId]
@@ -660,7 +660,12 @@ class ViewRecorderModule(
       return
     }
 
-    val sampleCount = samples.size()
+    val rawBytes = android.util.Base64.decode(samplesBase64, android.util.Base64.NO_WRAP)
+    val floatBuffer = java.nio.ByteBuffer.wrap(rawBytes)
+      .order(java.nio.ByteOrder.LITTLE_ENDIAN)
+      .asFloatBuffer()
+    val sampleCount = rawBytes.size / 4
+
     if (sampleCount == 0) {
       promise.resolve(null)
       return
@@ -670,7 +675,7 @@ class ViewRecorderModule(
       try {
         val pcmBytes = ByteArray(sampleCount * 2)
         for (i in 0 until sampleCount) {
-          val sample = samples.getDouble(i).toFloat().coerceIn(-1f, 1f)
+          val sample = floatBuffer.get(i).coerceIn(-1f, 1f)
           val pcm16 = (sample * 32767).toInt().toShort()
           pcmBytes[i * 2] = (pcm16.toInt() and 0xFF).toByte()
           pcmBytes[i * 2 + 1] = (pcm16.toInt() shr 8 and 0xFF).toByte()
@@ -682,7 +687,7 @@ class ViewRecorderModule(
           inputBuffer.clear()
           inputBuffer.put(pcmBytes)
 
-          // PTS = current video frame time (writeAudioSamples is called before captureFrame)
+          // PTS = current video frame time (writeAudioSamples fires before captureFrame advances it)
           val ptsUs = session.ptsUs
           audioEncoder.queueInputBuffer(inputIndex, 0, pcmBytes.size, ptsUs, 0)
         }

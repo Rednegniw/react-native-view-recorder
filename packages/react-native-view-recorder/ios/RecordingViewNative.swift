@@ -1,6 +1,8 @@
-// Native backing view for the RecordingView component.
-// Registers itself in a thread-safe weak-value map keyed by sessionId
-// so ViewRecorder can look up the live UIView for frame capture.
+/**
+ * Native backing view for the RecordingView component.
+ * Registers itself in a thread-safe weak-value map keyed by sessionId
+ * so ViewRecorder can look up the live UIView for frame capture.
+ */
 
 import UIKit
 

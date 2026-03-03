@@ -26,7 +26,7 @@ export interface Spec extends TurboModule {
   captureSkiaFrame(sessionId: string, skiaViewTag: number): Promise<void>;
   finishSession(sessionId: string): Promise<string>;
   cancelSession(sessionId: string): Promise<void>;
-  writeAudioSamples(sessionId: string, samples: number[]): Promise<void>;
+  writeAudioSamples(sessionId: string, samplesBase64: string): Promise<void>;
 }
 
 export default TurboModuleRegistry.get<Spec>("ViewRecorder");

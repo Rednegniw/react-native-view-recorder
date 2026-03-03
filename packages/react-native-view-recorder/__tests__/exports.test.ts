@@ -30,10 +30,8 @@ describe("public API exports", () => {
   });
 
   test("type exports compile correctly", () => {
-    // These type assertions verify the types exist at compile time.
-    // If any type is missing, ts-jest will fail to compile this file.
-    const _frameInfo: FrameInfo = { frameIndex: 0, totalFrames: 1 };
-    const _recordProgress: RecordProgress = {
+    const _frameInfo: FrameInfo<number> = { frameIndex: 0, totalFrames: 1 };
+    const _recordProgress: RecordProgress<number> = {
       framesEncoded: 1,
       totalFrames: 1,
     };
@@ -54,6 +52,80 @@ describe("public API exports", () => {
     expect(_codec).toBeDefined();
     expect(_options).toBeDefined();
     expect(_recorder).toBeDefined();
+  });
+
+  test("totalFrames narrows callback types", () => {
+    // With totalFrames: callbacks get totalFrames: number
+    const _withFrames: RecordOptions = {
+      output: "/out.mp4",
+      fps: 30,
+      totalFrames: 100,
+      onFrame: ({ totalFrames }) => {
+        const _n: number = totalFrames;
+        void _n;
+      },
+      onProgress: ({ totalFrames }) => {
+        const _n: number = totalFrames;
+        void _n;
+      },
+    };
+
+    // Without totalFrames: callbacks get totalFrames: undefined
+    const _eventDriven: RecordOptions = {
+      output: "/out.mp4",
+      fps: 30,
+      onFrame: ({ totalFrames }) => {
+        const _u: undefined = totalFrames;
+        void _u;
+      },
+      onProgress: ({ totalFrames }) => {
+        const _u: undefined = totalFrames;
+        void _u;
+      },
+    };
+
+    expect(_withFrames).toBeDefined();
+    expect(_eventDriven).toBeDefined();
+  });
+
+  test("audioFile and mixAudio are mutually exclusive at type level", () => {
+    // audioFile alone: OK
+    const _withFile: RecordOptions = {
+      output: "/out.mp4",
+      fps: 30,
+      totalFrames: 1,
+      audioFile: { path: "/audio.wav" },
+    };
+
+    // mixAudio alone: OK
+    const _withMix: RecordOptions = {
+      output: "/out.mp4",
+      fps: 30,
+      totalFrames: 1,
+      mixAudio: () => null,
+    };
+
+    // Neither: OK
+    const _noAudio: RecordOptions = {
+      output: "/out.mp4",
+      fps: 30,
+      totalFrames: 1,
+    };
+
+    // Both: should be a type error
+    // @ts-expect-error audioFile and mixAudio cannot be combined
+    const _both: RecordOptions = {
+      output: "/out.mp4",
+      fps: 30,
+      totalFrames: 1,
+      audioFile: { path: "/audio.wav" },
+      mixAudio: () => null,
+    };
+
+    expect(_withFile).toBeDefined();
+    expect(_withMix).toBeDefined();
+    expect(_noAudio).toBeDefined();
+    expect(_both).toBeDefined();
   });
 
   test("exports AbortError class with correct name", () => {

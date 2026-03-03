@@ -10,7 +10,9 @@ import java.nio.FloatBuffer
 // Not defined in EGL14; must declare manually
 private const val EGL_RECORDABLE_ANDROID = 0x3142
 
-/** Minimal EGL helper to draw Bitmaps onto a MediaCodec input Surface. */
+/**
+ * Minimal EGL helper to draw Bitmaps onto a MediaCodec input Surface.
+ */
 internal class EglWrapper(
   private val surface: Surface,
   private val width: Int,
@@ -73,7 +75,6 @@ internal class EglWrapper(
   private val vertexBuffer: FloatBuffer
 
   init {
-    // EGL display
     eglDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY)
     check(eglDisplay != EGL14.EGL_NO_DISPLAY) { "eglGetDisplay failed" }
 
@@ -81,7 +82,6 @@ internal class EglWrapper(
       "eglInitialize failed: 0x${Integer.toHexString(EGL14.eglGetError())}"
     }
 
-    // EGL config
     val attrib =
       intArrayOf(
         EGL14.EGL_RED_SIZE,
@@ -106,7 +106,6 @@ internal class EglWrapper(
     }
     check(num[0] > 0) { "No matching EGL config found" }
 
-    // EGL context + surface
     val ctxAttrib = intArrayOf(EGL14.EGL_CONTEXT_CLIENT_VERSION, 2, EGL14.EGL_NONE)
     eglContext = EGL14.eglCreateContext(eglDisplay, configs[0], EGL14.EGL_NO_CONTEXT, ctxAttrib, 0)
     check(eglContext != EGL14.EGL_NO_CONTEXT) { "eglCreateContext failed" }
@@ -117,10 +116,8 @@ internal class EglWrapper(
 
     EGL14.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)
 
-    // Shader program
     initShaderProgram()
 
-    // Vertex buffer
     vertexBuffer =
       ByteBuffer
         .allocateDirect(quadVertices.size * 4)
@@ -176,7 +173,9 @@ internal class EglWrapper(
     GLES20.glDeleteShader(fragmentShader)
   }
 
-  /** Upload bitmap data to the reusable texture and render a fullscreen quad. */
+  /**
+   * Upload bitmap data to the reusable texture and render a fullscreen quad.
+   */
   fun drawBitmap(bmp: Bitmap) {
     GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId)
     GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bmp, 0)
@@ -190,12 +189,10 @@ internal class EglWrapper(
     GLES20.glEnableVertexAttribArray(positionHandle)
     GLES20.glVertexAttribPointer(positionHandle, 2, GLES20.GL_FLOAT, false, 16, vertexBuffer)
 
-    // Texture coordinate attribute
     vertexBuffer.position(2)
     GLES20.glEnableVertexAttribArray(texCoordHandle)
     GLES20.glVertexAttribPointer(texCoordHandle, 2, GLES20.GL_FLOAT, false, 16, vertexBuffer)
 
-    // Bind texture and draw
     GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
     GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId)
     GLES20.glUniform1i(textureHandle, 0)
@@ -209,7 +206,9 @@ internal class EglWrapper(
 
   fun swapBuffers() = EGL14.eglSwapBuffers(eglDisplay, eglSurface)
 
-  /** Release EGL resources. Idempotent: safe to call multiple times. */
+  /**
+   * Release EGL resources. Idempotent: safe to call multiple times.
+   */
   fun releaseEgl() {
     if (released) return
     released = true
@@ -228,7 +227,9 @@ internal class EglWrapper(
     // Skip eglTerminate: the default display is shared process-wide.
   }
 
-  /** Full release including surface. */
+  /**
+   * Full release including surface.
+   */
   fun release() {
     releaseEgl()
     surface.release()

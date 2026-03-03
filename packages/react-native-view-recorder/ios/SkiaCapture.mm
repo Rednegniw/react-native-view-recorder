@@ -36,7 +36,6 @@ public:
         return false;
     }
 
-    // Provide Skia with the canvas from our wrapped SkSurface
     cb(_surface->getCanvas());
 
     return true;
@@ -138,8 +137,10 @@ static CVMetalTextureCacheRef getTextureCache(id<MTLDevice> device) {
     return NO;
   }
 
-  // Get the Metal device from the texture cache creation
-  // (MetalContext creates it internally, we use MTLCreateSystemDefaultDevice for ours)
+  /**
+   * Get the Metal device from the texture cache creation
+   * (MetalContext creates it internally, we use MTLCreateSystemDefaultDevice for ours).
+   */
   id<MTLDevice> device = MTLCreateSystemDefaultDevice();
   CVMetalTextureCacheRef cache = getTextureCache(device);
   if (!cache) {
@@ -221,7 +222,6 @@ static CVMetalTextureCacheRef getTextureCache(id<MTLDevice> device) {
     surface->getCanvas()->scale(sx, sy);
   }
 
-  // Create our custom canvas provider and render
   auto provider = std::make_shared<CVPixelBufferCanvasProvider>(surface, width, height);
   renderer->renderImmediate(provider);
 

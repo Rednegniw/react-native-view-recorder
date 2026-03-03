@@ -13,13 +13,13 @@ jest.mock("../src/NativeViewRecorder", () => ({
 }));
 
 import type { RecordOptions } from "../src/RecordingView";
-import { useViewRecorder } from "../src/RecordingView";
+import { float32ToBase64, useViewRecorder } from "../src/RecordingView";
 
-const baseOptions: RecordOptions = {
+const baseOptions = {
   output: "/path/to/video.mp4",
   fps: 30,
   totalFrames: 3,
-};
+} satisfies RecordOptions;
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -423,7 +423,7 @@ describe("useViewRecorder", () => {
         if (frameCount >= 3) stop();
       });
 
-      const result = await record({ ...baseOptions, totalFrames: undefined });
+      const result = await record({ output: baseOptions.output, fps: baseOptions.fps });
 
       expect(result).toBe("/output.mp4");
       expect(mockNative.captureFrame).toHaveBeenCalledTimes(3);
@@ -457,7 +457,10 @@ describe("useViewRecorder", () => {
 
       expect(mixAudio).toHaveBeenCalledTimes(1);
       expect(mockNative.writeAudioSamples).toHaveBeenCalledTimes(1);
-      expect(mockNative.writeAudioSamples).toHaveBeenCalledWith(expect.any(String), [0.5, -0.5]);
+      expect(mockNative.writeAudioSamples).toHaveBeenCalledWith(
+        expect.any(String),
+        float32ToBase64(new Float32Array([0.5, -0.5])),
+      );
     });
 
     test("does not call writeAudioSamples when mixAudio returns null", async () => {
@@ -512,15 +515,16 @@ describe("useViewRecorder", () => {
       );
     });
 
-    test("throws when audioFile and mixAudio are combined", async () => {
+    test("throws when audioFile and mixAudio are combined (JS bypass)", async () => {
       const { record } = useViewRecorder();
 
       await expect(
+        // Intentionally bypassing TS to test the runtime guard for plain JS callers
         record({
           ...baseOptions,
           audioFile: { path: "/audio/track.mp3" },
           mixAudio: () => new Float32Array([0]),
-        }),
+        } as unknown as RecordOptions),
       ).rejects.toThrow("audioFile and mixAudio cannot be combined");
 
       expect(mockNative.startSession).not.toHaveBeenCalled();

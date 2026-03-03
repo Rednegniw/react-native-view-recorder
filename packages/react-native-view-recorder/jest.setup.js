@@ -1,5 +1,7 @@
-// Mock React hooks as pass-through functions so hooks can be called as plain functions
-// without needing a React renderer.
+/**
+ * Mock React hooks as pass-through functions so hooks can be called as plain functions
+ * without needing a React renderer.
+ */
 jest.mock("react", () => ({
   useRef: (init) => ({ current: init }),
   useCallback: (fn) => fn,

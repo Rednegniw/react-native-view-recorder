@@ -27,7 +27,7 @@ RCT_EXTERN_METHOD(cancelSession:(NSString *)sessionId
                   rejecter:(RCTPromiseRejectBlock)reject)
 
 RCT_EXTERN_METHOD(writeAudioSamples:(NSString *)sessionId
-                  samples:(NSArray *)samples
+                  samplesBase64:(NSString *)samplesBase64
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 // clang-format on
