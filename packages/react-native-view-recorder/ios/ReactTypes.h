@@ -1,6 +1,8 @@
-// Forward declarations of React Native types used by Swift code.
-// These avoid importing the full React module (which has a broken umbrella header
-// in prebuilt RN 0.83). The actual implementations are linked from React-Core.
+/**
+ * Forward declarations of React Native types used by Swift code.
+ * These avoid importing the full React module (which has a broken umbrella header
+ * in prebuilt RN 0.83). The actual implementations are linked from React-Core.
+ */
 
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>

@@ -3,10 +3,10 @@ import { File, Paths } from "expo-file-system";
 import { LinearGradient } from "expo-linear-gradient";
 import * as MediaLibrary from "expo-media-library";
 import { NumberFlow } from "number-flow-react-native";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Alert, Text, TextInput, View } from "react-native";
 import { Easing } from "react-native-reanimated";
-import { RecordingView, useViewRecorder } from "react-native-view-recorder";
+import { AbortError, RecordingView, useViewRecorder } from "react-native-view-recorder";
 import { RippleButton } from "../components/RippleButton";
 import { VideoOverview } from "../components/VideoOverview";
 import { colors } from "../theme/colors";
@@ -47,6 +47,7 @@ export const StandardRecordingDemo = () => {
   const [progress, setProgress] = useState(0);
   const [saved, setSaved] = useState(false);
   const [bitrateText, setBitrateText] = useState("");
+  const abortRef = useRef<AbortController | null>(null);
 
   const startRecording = useCallback(async () => {
     setStatus("recording");
@@ -62,6 +63,9 @@ export const StandardRecordingDemo = () => {
     const parsedBitrate = Number.parseFloat(bitrateText);
     const bitrate = parsedBitrate > 0 ? parsedBitrate * 1_000_000 : undefined;
 
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
       const result = await recorder.record({
         output: outputPath,
@@ -70,6 +74,7 @@ export const StandardRecordingDemo = () => {
         height: HEIGHT,
         totalFrames: TOTAL_FRAMES,
         optimizeForNetwork: true,
+        signal: controller.signal,
         ...(bitrate && { bitrate }),
 
         onFrame: async ({ frameIndex }) => {
@@ -78,17 +83,27 @@ export const StandardRecordingDemo = () => {
         },
 
         onProgress: ({ framesEncoded, totalFrames }) => {
-          setProgress(Math.round((framesEncoded / totalFrames) * 100));
+          setProgress(Math.round((framesEncoded / (totalFrames ?? 1)) * 100));
         },
       });
 
       setVideoUri(result);
       setStatus("done");
     } catch (e) {
+      if (e instanceof AbortError) {
+        setStatus("idle");
+        return;
+      }
       setErrorMsg(e instanceof Error ? e.message : String(e));
       setStatus("error");
+    } finally {
+      abortRef.current = null;
     }
   }, [bitrateText, recorder]);
+
+  const cancelRecording = useCallback(() => {
+    abortRef.current?.abort();
+  }, []);
 
   const saveToLibrary = useCallback(async () => {
     if (!videoUri) return;
@@ -179,12 +194,20 @@ export const StandardRecordingDemo = () => {
         </View>
       )}
 
-      {/* Progress */}
+      {/* Progress + Cancel */}
       {isRecording && (
-        <View style={{ alignItems: "center" }}>
+        <View
+          style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 16 }}
+        >
           <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
             Recording... {progress}%
           </Text>
+          <RippleButton onPress={cancelRecording} variant="secondary">
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <Ionicons name="close-circle-outline" size={16} color="#fff" />
+              <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>Cancel</Text>
+            </View>
+          </RippleButton>
         </View>
       )}
 
@@ -222,7 +245,12 @@ export const StandardRecordingDemo = () => {
 
       {/* Action buttons */}
       <View style={{ flexDirection: "row", gap: 12 }}>
-        <RippleButton onPress={startRecording} disabled={isRecording} variant="primary">
+        <RippleButton
+          onPress={startRecording}
+          disabled={isRecording}
+          variant="primary"
+          style={{ flex: 1 }}
+        >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             {status === "done" && <Ionicons name="reload" size={18} color="#fff" />}
             <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>
@@ -236,6 +264,7 @@ export const StandardRecordingDemo = () => {
             onPress={saveToLibrary}
             disabled={saved}
             variant={saved ? "success" : "secondary"}
+            style={{ flex: 1 }}
           >
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
               <Ionicons

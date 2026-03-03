@@ -9,6 +9,9 @@ packages/*/android/build/
 
 # Tool configs
 .claude/
+.vscode/
+.playwright-mcp/
+*.code-workspace
 
 # Temp screenshots
 /*.png

@@ -68,7 +68,7 @@ export const AutoplaySkiaDemo = () => {
         totalFrames: TOTAL_FRAMES,
         optimizeForNetwork: true,
         onFrame: async ({ frameIndex, totalFrames }) => {
-          setFrameProgress(frameIndex / totalFrames);
+          setFrameProgress(frameIndex / (totalFrames ?? 1));
         },
       });
 

@@ -63,7 +63,7 @@ export const ViewResizeDemo = () => {
         },
 
         onProgress: ({ framesEncoded, totalFrames }) => {
-          setProgress(Math.round((framesEncoded / totalFrames) * 100));
+          setProgress(Math.round((framesEncoded / (totalFrames ?? 1)) * 100));
         },
       });
 
