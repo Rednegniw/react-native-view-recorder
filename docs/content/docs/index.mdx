@@ -1,6 +1,6 @@
 ---
 title: Overview
-description: Record any React Native view to MP4 video with hardware-accelerated encoding. No FFmpeg, no GPL.
+description: React Native library for recording any view to video, with native hardware-accelerated encoding pipelines on iOS and Android. Supports Skia and programmatic audio mixing.
 full: true
 ---
 
@@ -8,26 +8,21 @@ full: true
 
 <FeatureCards />
 
-## What is React Native View Recorder?
+## Overview
 
-React Native View Recorder captures any React Native view (including Skia canvases) frame-by-frame and encodes the frames into MP4 video using platform-native hardware encoders.
+React Native View Recorder is a library designed to record any React Native view, not just the screen of the app. This is achieved through native hardware-accelerated encoding pipelines on both iOS and Android, without relying on FFmpeg or any GPL-licensed components.
 
-- **iOS**: `drawHierarchy` renders standard views into bitmaps fed to `AVAssetWriter`. Skia content uses a separate zero-copy Metal pipeline since `drawHierarchy` cannot capture `CAMetalLayer`.
-- **Android**: `PixelCopy` captures from the window compositor (works with all view types including Skia), uploaded to `MediaCodec` via EGL
+It's great for providing your users with the ability to export videos from your app, whether it's a summary to share, a replay of a game, or a recording of their own animations/creations.
 
-There are no bundled binaries, no FFmpeg, and no GPL/LGPL concerns.
+It supports Skia! This enables many more use cases - as far as I know, no other library can record Skia content to video. The Skia pipeline is zero-copy and works with all Skia renderers (Canvas, OpenGL, Metal) since it captures directly from the GPU.
 
-## Notes
+It also supports audio: mux any audio file (WAV, MP3, AAC, M4A) into your video natively, or use a per-frame callback for synthesized audio. No permissions required.
 
-1. Wrap your content in `<RecordingView>` and call `recorder.record()`
-2. The library calls your `onFrame` callback, waits for React to render, then captures the native view
-3. On iOS, `drawHierarchy` renders the view into a bitmap, which is copied into a `CVPixelBuffer` for `AVAssetWriter`. For Skia content, a zero-copy Metal pipeline captures directly into the encoder's pixel buffers.
-4. On Android, `PixelCopy` captures from the window compositor into a bitmap, uploaded to MediaCodec via EGL
-5. When all frames are captured, the encoder finalizes the MP4
+There are no bundled binaries, no FFmpeg, and no GPL/LGPL concerns. This library is fully MIT licensed.
 
 ## Platform requirements
 
-| Platform | Minimum version | Capture method | Encoder |
-|----------|----------------|----------------|---------|
-| iOS | 13.0 | `drawHierarchy` | AVAssetWriter |
-| Android | SDK 26 (8.0) | `PixelCopy` | MediaCodec + EGL |
+| Platform | Minimum version |
+| -------- | --------------- |
+| iOS      | 13.0            |
+| Android  | SDK 26 (8.0)    |

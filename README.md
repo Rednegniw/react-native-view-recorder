@@ -125,6 +125,7 @@ Returns a `ViewRecorder` handle:
 
 - `sessionId` - pass to `<RecordingView>`
 - `record(options)` - records all frames and returns the output path
+- `stop()` - stop an event-driven recording (or finish a fixed-length one early)
 
 ### `useSkiaViewRecorder()`
 
@@ -136,16 +137,49 @@ Returns a `ViewRecorder` handle plus a `viewRef` to pass to `<SkiaRecordingView>
 |--------|------|---------|-------------|
 | `output` | `string` | required | Absolute path for the output MP4 |
 | `fps` | `number` | required | Frames per second |
-| `totalFrames` | `number` | required | Total frames to capture |
+| `totalFrames` | `number` | - | Total frames to capture. Omit for event-driven recording (call `stop()` to finish). |
 | `onFrame` | `(info) => void` | - | Called before each frame. Update view content here. |
 | `onProgress` | `(info) => void` | - | Called after each frame is encoded |
 | `width` | `number` | view width | Output width in pixels |
 | `height` | `number` | view height | Output height in pixels |
 | `codec` | `"h264" \| "hevc" \| "hevcWithAlpha"` | `"hevc"` | Video codec |
 | `bitrate` | `number` | auto | Target bitrate in bits/second |
-| `quality` | `number` | - | 0.0 (smallest) to 1.0 (best) |
+| `quality` | `number` | - | 0.0 (smallest) to 1.0 (best). On Android, mapped to bitrate via power curve. |
 | `keyFrameInterval` | `number` | 2 | Seconds between keyframes |
 | `optimizeForNetwork` | `boolean` | true | Move moov atom to front |
+| `signal` | `AbortSignal` | - | Cancel the recording. Rejects with `AbortError`, deletes partial file. |
+| `audioFile` | `{ path: string; startTime?: number }` | - | Mux an audio file into the video. Decoded and muxed natively. |
+| `mixAudio` | `(info) => Float32Array \| null` | - | Per-frame audio callback for programmatic audio. |
+
+### Audio
+
+**`audioFile`** muxes an audio file (WAV, MP3, AAC, M4A, etc.) into the video. The native side decodes and muxes the audio directly. No permissions required:
+
+```tsx
+await recorder.record({
+  output: path,
+  fps: 60,
+  totalFrames: 180,
+  audioFile: { path: '/path/to/audio.mp3' },
+});
+```
+
+**`mixAudio`** lets you provide audio samples per-frame via a JS callback. Useful for procedural/synthesized audio:
+
+```tsx
+await recorder.record({
+  output: path,
+  fps: 60,
+  totalFrames: 180,
+  mixAudio: ({ samplesNeeded, sampleRate }) => {
+    const samples = new Float32Array(samplesNeeded);
+    // fill with audio data...
+    return samples;
+  },
+});
+```
+
+`audioFile` and `mixAudio` cannot be combined.
 
 ## Notes
 
