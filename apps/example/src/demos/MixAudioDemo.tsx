@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { File, Paths } from "expo-file-system";
 import { LinearGradient } from "expo-linear-gradient";
 import * as MediaLibrary from "expo-media-library";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Alert, Text, View } from "react-native";
 import { RecordingView, useViewRecorder } from "react-native-view-recorder";
 import { RippleButton } from "../components/RippleButton";
@@ -15,61 +15,13 @@ const TOTAL_FRAMES = FPS * DURATION_SECONDS;
 const WIDTH = 640;
 const HEIGHT = 480;
 
-const SAMPLE_RATE = 44100;
-const WAV_DURATION = 5; // seconds (longer than video so we always have audio)
+const START_FREQ = 220;
+const END_FREQ = 880;
+const AMPLITUDE = 0.3;
 
-// Generate a WAV file with a rising sine wave (220 Hz to 880 Hz)
-function generateWavFile(): string {
-  const numSamples = SAMPLE_RATE * WAV_DURATION;
-  const bytesPerSample = 2; // 16-bit PCM
-  const dataSize = numSamples * bytesPerSample;
-  const headerSize = 44;
-  const buffer = new ArrayBuffer(headerSize + dataSize);
-  const view = new DataView(buffer);
+type Status = "idle" | "recording" | "done" | "error";
 
-  // WAV header
-  const writeString = (offset: number, str: string) => {
-    for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
-  };
-  writeString(0, "RIFF");
-  view.setUint32(4, 36 + dataSize, true);
-  writeString(8, "WAVE");
-  writeString(12, "fmt ");
-  view.setUint32(16, 16, true); // chunk size
-  view.setUint16(20, 1, true); // PCM format
-  view.setUint16(22, 1, true); // mono
-  view.setUint32(24, SAMPLE_RATE, true);
-  view.setUint32(28, SAMPLE_RATE * bytesPerSample, true); // byte rate
-  view.setUint16(32, bytesPerSample, true); // block align
-  view.setUint16(34, 16, true); // bits per sample
-  writeString(36, "data");
-  view.setUint32(40, dataSize, true);
-
-  // Generate rising sine wave (220 Hz -> 880 Hz)
-  let phase = 0;
-  for (let i = 0; i < numSamples; i++) {
-    const t = i / numSamples;
-    const freq = 220 + t * 660;
-    const sample = Math.sin(phase) * 0.3;
-    phase += (2 * Math.PI * freq) / SAMPLE_RATE;
-
-    const pcm16 = Math.max(-32768, Math.min(32767, Math.round(sample * 32767)));
-    view.setInt16(headerSize + i * bytesPerSample, pcm16, true);
-  }
-
-  // Write to file
-  const wavFile = new File(Paths.cache, "demo-audio.wav");
-  if (wavFile.exists) wavFile.delete();
-
-  const bytes = new Uint8Array(buffer);
-  wavFile.write(bytes);
-
-  return wavFile.uri.replace("file://", "");
-}
-
-type Status = "idle" | "generating" | "recording" | "done" | "error";
-
-export const AudioRecordingDemo = () => {
+export const MixAudioDemo = () => {
   const recorder = useViewRecorder();
 
   const [status, setStatus] = useState<Status>("idle");
@@ -78,27 +30,18 @@ export const AudioRecordingDemo = () => {
   const [progress, setProgress] = useState(0);
   const [saved, setSaved] = useState(false);
   const [currentFrame, setCurrentFrame] = useState(0);
-  const wavPathRef = useRef<string | null>(null);
-
-  // Pre-generate the WAV file on mount
-  useEffect(() => {
-    wavPathRef.current = generateWavFile();
-  }, []);
+  const phaseRef = useRef(0);
 
   const startRecording = useCallback(async () => {
-    if (!wavPathRef.current) {
-      setStatus("generating");
-      wavPathRef.current = generateWavFile();
-    }
-
     setStatus("recording");
     setErrorMsg(null);
     setVideoUri(null);
     setSaved(false);
     setProgress(0);
     setCurrentFrame(0);
+    phaseRef.current = 0;
 
-    const outputFile = new File(Paths.cache, "audio-file.mp4");
+    const outputFile = new File(Paths.cache, "mix-audio.mp4");
     if (outputFile.exists) outputFile.delete();
     const outputPath = outputFile.uri.replace("file://", "");
 
@@ -116,10 +59,20 @@ export const AudioRecordingDemo = () => {
         },
 
         onProgress: ({ framesEncoded, totalFrames }) => {
-          setProgress(Math.round((framesEncoded / (totalFrames ?? 1)) * 100));
+          setProgress(Math.round((framesEncoded / totalFrames) * 100));
         },
 
-        audioFile: { path: wavPathRef.current! },
+        mixAudio: ({ frameIndex, samplesNeeded, sampleRate }) => {
+          const samples = new Float32Array(samplesNeeded);
+          for (let i = 0; i < samplesNeeded; i++) {
+            const globalT =
+              ((frameIndex * sampleRate) / FPS + i) / ((TOTAL_FRAMES * sampleRate) / FPS);
+            const freq = START_FREQ + globalT * (END_FREQ - START_FREQ);
+            samples[i] = Math.sin(phaseRef.current) * AMPLITUDE;
+            phaseRef.current += (2 * Math.PI * freq) / sampleRate;
+          }
+          return samples;
+        },
       });
 
       setVideoUri(result);
@@ -144,10 +97,11 @@ export const AudioRecordingDemo = () => {
   }, [videoUri]);
 
   const isRecording = status === "recording";
-  const freq = 220 + (currentFrame / TOTAL_FRAMES) * 660;
+  const freq = START_FREQ + (currentFrame / TOTAL_FRAMES) * (END_FREQ - START_FREQ);
 
   return (
     <View style={{ gap: 16 }}>
+      {/* RecordingView */}
       <View
         style={
           isRecording
@@ -182,7 +136,7 @@ export const AudioRecordingDemo = () => {
                 {Math.round(freq)} Hz
               </Text>
               <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 16 }}>
-                audio file muxed natively
+                audio generated via mixAudio callback
               </Text>
             </LinearGradient>
           </View>
@@ -220,8 +174,8 @@ export const AudioRecordingDemo = () => {
             </Text>
           ) : (
             <Text style={{ color: colors.textTertiary, fontSize: 14, textAlign: "center" }}>
-              Record {DURATION_SECONDS}s of video with a rising sine wave{"\n"}muxed from a WAV file
-              via the audioFile option.
+              Record {DURATION_SECONDS}s of video with a rising sine wave{"\n"}generated in
+              real-time via the mixAudio callback.
             </Text>
           )}
         </View>
@@ -231,7 +185,7 @@ export const AudioRecordingDemo = () => {
       {isRecording && (
         <View style={{ alignItems: "center" }}>
           <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-            Recording with audio... {progress}%
+            Recording with mixAudio... {progress}%
           </Text>
         </View>
       )}
@@ -247,7 +201,7 @@ export const AudioRecordingDemo = () => {
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             {status === "done" && <Ionicons name="reload" size={18} color="#fff" />}
             <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>
-              {status === "done" ? "Record Again" : "Record with Audio"}
+              {status === "done" ? "Record Again" : "Record with mixAudio"}
             </Text>
           </View>
         </RippleButton>

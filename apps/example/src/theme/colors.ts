@@ -5,7 +5,7 @@ export const colors = {
   text: "#ffffff",
   textSecondary: "#aaaaaa",
   textTertiary: "#666666",
-  accent: "#007AFF",
+  accent: "#b075eb",
   success: "#34C759",
   error: "#FF3B30",
   recording: "#FF3B30",

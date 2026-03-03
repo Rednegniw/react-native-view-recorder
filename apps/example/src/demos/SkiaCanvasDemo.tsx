@@ -184,9 +184,11 @@ export const SkiaCanvasDemo = () => {
   );
 };
 
-// Skia canvas content: rotating rounded rect with gradient + orbiting circles.
-// Coordinates are derived from actual canvas point dimensions (not video pixel dimensions)
-// since the Skia Canvas coordinate system matches the view's layout size.
+/**
+ * Skia canvas content: rotating rounded rect with gradient + orbiting circles.
+ * Coordinates are derived from actual canvas point dimensions (not video pixel dimensions)
+ * since the Skia Canvas coordinate system matches the view's layout size.
+ */
 function SkiaContent({
   progress,
   canvasWidth,
