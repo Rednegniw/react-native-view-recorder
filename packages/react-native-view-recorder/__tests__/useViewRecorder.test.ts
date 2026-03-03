@@ -3,6 +3,8 @@ const mockNative = {
   captureFrame: jest.fn().mockResolvedValue(undefined),
   captureSkiaFrame: jest.fn().mockResolvedValue(undefined),
   finishSession: jest.fn().mockResolvedValue("/output.mp4"),
+  cancelSession: jest.fn().mockResolvedValue(undefined),
+  writeAudioSamples: jest.fn().mockResolvedValue(undefined),
 };
 
 jest.mock("../src/NativeViewRecorder", () => ({
@@ -67,7 +69,7 @@ describe("useViewRecorder", () => {
       });
     });
 
-    test("does not pass onFrame, onProgress, or totalFrames to startSession", async () => {
+    test("does not pass onFrame, onProgress, totalFrames, or signal to startSession", async () => {
       const { record } = useViewRecorder();
       const onFrame = jest.fn();
       const onProgress = jest.fn();
@@ -78,6 +80,7 @@ describe("useViewRecorder", () => {
       expect(sessionArg).not.toHaveProperty("onFrame");
       expect(sessionArg).not.toHaveProperty("onProgress");
       expect(sessionArg).not.toHaveProperty("totalFrames");
+      expect(sessionArg).not.toHaveProperty("signal");
     });
 
     test("loops exactly totalFrames times", async () => {
@@ -330,17 +333,17 @@ describe("useViewRecorder", () => {
   });
 
   describe("error handling and cleanup", () => {
-    test("if startSession rejects: calls finishSession for cleanup, re-throws", async () => {
+    test("if startSession rejects: calls cancelSession for cleanup, re-throws", async () => {
       const { record } = useViewRecorder();
       const error = new Error("start failed");
 
       mockNative.startSession.mockRejectedValueOnce(error);
 
       await expect(record(baseOptions)).rejects.toThrow("start failed");
-      expect(mockNative.finishSession).toHaveBeenCalledTimes(1);
+      expect(mockNative.cancelSession).toHaveBeenCalledTimes(1);
     });
 
-    test("if captureFrame rejects mid-loop: calls finishSession for cleanup, re-throws", async () => {
+    test("if captureFrame rejects mid-loop: calls cancelSession for cleanup, re-throws", async () => {
       const { record } = useViewRecorder();
 
       mockNative.captureFrame
@@ -348,24 +351,24 @@ describe("useViewRecorder", () => {
         .mockRejectedValueOnce(new Error("capture failed"));
 
       await expect(record(baseOptions)).rejects.toThrow("capture failed");
-      expect(mockNative.finishSession).toHaveBeenCalledTimes(1);
+      expect(mockNative.cancelSession).toHaveBeenCalledTimes(1);
     });
 
-    test("if finishSession rejects during cleanup: swallows cleanup error, re-throws original", async () => {
+    test("if cancelSession rejects during cleanup: swallows cleanup error, re-throws original", async () => {
       const { record } = useViewRecorder();
 
       mockNative.startSession.mockRejectedValueOnce(new Error("original error"));
-      mockNative.finishSession.mockRejectedValueOnce(new Error("cleanup error"));
+      mockNative.cancelSession.mockRejectedValueOnce(new Error("cleanup error"));
 
       await expect(record(baseOptions)).rejects.toThrow("original error");
     });
 
-    test("if onFrame callback throws: calls finishSession for cleanup, re-throws", async () => {
+    test("if onFrame callback throws: calls cancelSession for cleanup, re-throws", async () => {
       const { record } = useViewRecorder();
       const onFrame = jest.fn().mockRejectedValue(new Error("frame error"));
 
       await expect(record({ ...baseOptions, onFrame })).rejects.toThrow("frame error");
-      expect(mockNative.finishSession).toHaveBeenCalledTimes(1);
+      expect(mockNative.cancelSession).toHaveBeenCalledTimes(1);
     });
 
     test("after error, isRecordingRef is reset (can record again)", async () => {
@@ -376,6 +379,172 @@ describe("useViewRecorder", () => {
       await expect(record(baseOptions)).rejects.toThrow("capture failed");
 
       // Should not throw "already in progress"
+      const result = await record(baseOptions);
+      expect(result).toBe("/output.mp4");
+    });
+  });
+
+  describe("AbortSignal cancellation", () => {
+    test("rejects with AbortError when signal is already aborted", async () => {
+      const { record } = useViewRecorder();
+      const controller = new AbortController();
+      controller.abort();
+
+      await expect(record({ ...baseOptions, signal: controller.signal })).rejects.toThrow(
+        "Recording was aborted",
+      );
+      expect(mockNative.startSession).not.toHaveBeenCalled();
+    });
+
+    test("calls cancelSession (not finishSession) when signal aborts mid-recording", async () => {
+      const { record } = useViewRecorder();
+      const controller = new AbortController();
+
+      mockNative.captureFrame.mockImplementationOnce(async () => {
+        controller.abort();
+      });
+
+      await expect(
+        record({ ...baseOptions, totalFrames: 3, signal: controller.signal }),
+      ).rejects.toThrow("Recording was aborted");
+
+      expect(mockNative.cancelSession).toHaveBeenCalledTimes(1);
+      expect(mockNative.finishSession).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("event-driven recording (stop())", () => {
+    test("stop() ends the recording loop and calls finishSession", async () => {
+      const { record, stop } = useViewRecorder();
+      let frameCount = 0;
+
+      mockNative.captureFrame.mockImplementation(async () => {
+        frameCount++;
+        if (frameCount >= 3) stop();
+      });
+
+      const result = await record({ ...baseOptions, totalFrames: undefined });
+
+      expect(result).toBe("/output.mp4");
+      expect(mockNative.captureFrame).toHaveBeenCalledTimes(3);
+      expect(mockNative.finishSession).toHaveBeenCalledTimes(1);
+    });
+
+    test("stop() also works with totalFrames (early finish)", async () => {
+      const { record, stop } = useViewRecorder();
+
+      mockNative.captureFrame.mockImplementationOnce(async () => {
+        stop();
+      });
+
+      const result = await record({ ...baseOptions, totalFrames: 100 });
+
+      expect(result).toBe("/output.mp4");
+      expect(mockNative.captureFrame).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("mixAudio callback", () => {
+    test("calls writeAudioSamples with samples from mixAudio", async () => {
+      const { record } = useViewRecorder();
+      const mixAudio = jest.fn(() => new Float32Array([0.5, -0.5]));
+
+      await record({
+        ...baseOptions,
+        totalFrames: 1,
+        mixAudio,
+      });
+
+      expect(mixAudio).toHaveBeenCalledTimes(1);
+      expect(mockNative.writeAudioSamples).toHaveBeenCalledTimes(1);
+      expect(mockNative.writeAudioSamples).toHaveBeenCalledWith(expect.any(String), [0.5, -0.5]);
+    });
+
+    test("does not call writeAudioSamples when mixAudio returns null", async () => {
+      const { record } = useViewRecorder();
+      const mixAudio = jest.fn(() => null);
+
+      await record({
+        ...baseOptions,
+        totalFrames: 1,
+        mixAudio,
+      });
+
+      expect(mixAudio).toHaveBeenCalledTimes(1);
+      expect(mockNative.writeAudioSamples).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("audioFile option", () => {
+    test("forwards audioFilePath to startSession", async () => {
+      const { record } = useViewRecorder();
+
+      await record({
+        ...baseOptions,
+        totalFrames: 1,
+        audioFile: { path: "/audio/track.mp3" },
+      });
+
+      expect(mockNative.startSession).toHaveBeenCalledWith(
+        expect.objectContaining({
+          audioFilePath: "/audio/track.mp3",
+          audioSampleRate: 44100,
+          audioChannels: 1,
+          audioBitrate: 128000,
+        }),
+      );
+    });
+
+    test("forwards audioFileStartTime when provided", async () => {
+      const { record } = useViewRecorder();
+
+      await record({
+        ...baseOptions,
+        totalFrames: 1,
+        audioFile: { path: "/audio/track.mp3", startTime: 2.5 },
+      });
+
+      expect(mockNative.startSession).toHaveBeenCalledWith(
+        expect.objectContaining({
+          audioFilePath: "/audio/track.mp3",
+          audioFileStartTime: 2.5,
+        }),
+      );
+    });
+
+    test("throws when audioFile and mixAudio are combined", async () => {
+      const { record } = useViewRecorder();
+
+      await expect(
+        record({
+          ...baseOptions,
+          audioFile: { path: "/audio/track.mp3" },
+          mixAudio: () => new Float32Array([0]),
+        }),
+      ).rejects.toThrow("audioFile and mixAudio cannot be combined");
+
+      expect(mockNative.startSession).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("hevcWithAlpha validation", () => {
+    test("throws when hevcWithAlpha is used with .mp4 output", async () => {
+      const { record } = useViewRecorder();
+
+      await expect(
+        record({ ...baseOptions, codec: "hevcWithAlpha", output: "/out.mp4" }),
+      ).rejects.toThrow("hevcWithAlpha requires .mov output");
+
+      expect(mockNative.startSession).not.toHaveBeenCalled();
+    });
+
+    test("can record again after hevcWithAlpha validation error", async () => {
+      const { record } = useViewRecorder();
+
+      await expect(
+        record({ ...baseOptions, codec: "hevcWithAlpha", output: "/out.mp4" }),
+      ).rejects.toThrow("hevcWithAlpha requires .mov output");
+
       const result = await record(baseOptions);
       expect(result).toBe("/output.mp4");
     });

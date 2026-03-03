@@ -1,6 +1,6 @@
 ---
 title: Getting Started
-description: Install React Native View Recorder in your project
+description: Let's install and set up React Native View Recorder in your project.
 full: true
 ---
 
@@ -10,7 +10,12 @@ full: true
 <Step>
 ### Install the library
 
-<Tabs items={['bun', 'npm', 'yarn', 'pnpm']}>
+<Tabs items={['expo', 'bun', 'npm', 'yarn', 'pnpm']}>
+<Tab value="expo">
+```bash
+npx expo install react-native-view-recorder
+```
+</Tab>
 <Tab value="bun">
 ```bash
 bun add react-native-view-recorder
@@ -34,11 +39,24 @@ pnpm add react-native-view-recorder
 </Tabs>
 </Step>
 <Step>
+### Configure the Expo plugin (Expo projects)
+
+Add the plugin to your app config:
+
+```json title="app.json"
+{
+  "expo": {
+    "plugins": ["react-native-view-recorder"]
+  }
+}
+```
+</Step>
+<Step>
 ### Rebuild your dev client
 
 ```bash
-bunx expo run:ios
-bunx expo run:android
+npx expo run:ios
+npx expo run:android
 ```
 
 <Callout type="warn">
@@ -49,8 +67,8 @@ Expo Go does not include custom native modules. You need a development build (Ex
 
 ## Peer dependencies
 
-| Package | Version | Required |
-|---------|---------|----------|
-| react | >= 18 | Yes |
-| react-native | >= 0.73 | Yes |
-| expo | >= 54.0.0 | Optional |
+| Package      | Version   | Required |
+| ------------ | --------- | -------- |
+| react        | >= 18     | Yes      |
+| react-native | >= 0.73   | Yes      |
+| expo         | >= 54.0.0 | Optional |

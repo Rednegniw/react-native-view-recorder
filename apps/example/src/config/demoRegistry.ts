@@ -58,6 +58,28 @@ export const DEMO_SECTIONS: DemoSection[] = [
           return require("../demos/SkiaCanvasDemo").SkiaCanvasDemo;
         },
       },
+      {
+        key: "event-driven",
+        title: "Event-Driven Recording",
+        description: "Record until you tap Stop. No totalFrames needed.",
+        get Component() {
+          return require("../demos/EventDrivenDemo").EventDrivenDemo;
+        },
+      },
+    ],
+  },
+  {
+    title: "Audio",
+    data: [
+      {
+        key: "audio-file",
+        title: "Audio File",
+        description:
+          "Mux a WAV audio file into the video natively via the audioFile option. No permissions needed.",
+        get Component() {
+          return require("../demos/AudioRecordingDemo").AudioRecordingDemo;
+        },
+      },
     ],
   },
   {
