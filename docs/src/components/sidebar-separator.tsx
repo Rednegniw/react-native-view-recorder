@@ -1,7 +1,8 @@
-import { BookOpen, Braces, type LucideIcon } from "lucide-react";
+import { BookOpen, Braces, type LucideIcon, Play } from "lucide-react";
 import type { ReactNode } from "react";
 
 const sectionIcons: Record<string, LucideIcon> = {
+  Examples: Play,
   "API Reference": Braces,
   Guides: BookOpen,
 };

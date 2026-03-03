@@ -1,5 +1,5 @@
 ---
-title: Quick Start
+title: Basic Example
 description: Record your first view to MP4 in under 5 minutes
 full: true
 ---
@@ -35,17 +35,19 @@ function App() {
         console.log(`${framesEncoded}/${totalFrames}`);
       },
     });
-    console.log("Saved:", videoUri);
   };
 
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+      {/* Link the RecordingView to the recorder session */}
       <RecordingView
         sessionId={recorder.sessionId}
         style={{ width: 640, height: 480 }}
       >
         <MyContent frame={frame} />
       </RecordingView>
+
+      {/* Trigger recording */}
       <Button title="Record" onPress={handleRecord} />
     </View>
   );
@@ -62,9 +64,3 @@ function App() {
 5. When all frames are captured, the promise resolves with the output file path
 </Step>
 </Steps>
-
-## Next steps
-
-- [RecordingView API reference](/docs/api/recording-view) for all component props
-- [RecordOptions reference](/docs/api/record-options) for encoding configuration
-- [Skia Recording](/docs/api/skia-recording-view) for capturing Skia canvases

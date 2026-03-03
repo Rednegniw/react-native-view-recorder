@@ -46,44 +46,4 @@ function SkiaRecorder() {
 }
 ```
 
-## useSkiaViewRecorder
-
-Hook that creates a Skia view recorder session. Uses `captureSkiaFrame` for Skia content.
-
-### Signature
-
-```tsx
-function useSkiaViewRecorder(): ViewRecorder & {
-  viewRef: React.RefObject<RecordingViewRef | null>;
-}
-```
-
-### Returns
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `sessionId` | `string` | Unique session ID |
-| `record` | `(options: RecordOptions) => Promise<string>` | Starts recording |
-| `viewRef` | `React.RefObject` | Pass as the `viewRef` prop on `<SkiaRecordingView>` |
-
-### Usage
-
-```tsx
-const recorder = useSkiaViewRecorder();
-
-<SkiaRecordingView
-  viewRef={recorder.viewRef}
-  sessionId={recorder.sessionId}
->
-  <Canvas style={{ flex: 1 }}>
-    {/* Skia content */}
-  </Canvas>
-</SkiaRecordingView>
-
-const path = await recorder.record({
-  output: "/path/to/skia-output.mp4",
-  fps: 60,
-  totalFrames: 180,
-  onFrame: async ({ frameIndex }) => updateAnimation(frameIndex),
-});
-```
+Pair this component with the [useSkiaViewRecorder](/docs/api/use-skia-view-recorder) hook.

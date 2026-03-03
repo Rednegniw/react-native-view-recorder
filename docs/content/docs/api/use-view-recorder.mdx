@@ -1,0 +1,50 @@
+---
+title: useViewRecorder
+description: Hook for creating a view recorder session
+full: true
+---
+
+Hook that creates a view recorder session. Returns a session ID to link to a `RecordingView` and a `record` function to start capturing.
+
+## Import
+
+```tsx
+import { useViewRecorder } from "react-native-view-recorder";
+```
+
+## Signature
+
+```tsx
+function useViewRecorder(): ViewRecorder
+```
+
+## Returns
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `sessionId` | `string` | Unique session ID. Pass this as the `sessionId` prop on `<RecordingView>`. |
+| `record` | `(options: RecordOptions) => Promise<string>` | Starts recording. Returns the output file path when complete. |
+| `stop` | `() => void` | Stops an in-progress recording gracefully. The `record()` promise resolves with the output path after the current frame finishes encoding. Works for both event-driven (no `totalFrames`) and fixed-length recordings. |
+
+## Usage
+
+```tsx
+const recorder = useViewRecorder();
+
+// Link to the view
+<RecordingView sessionId={recorder.sessionId}>
+  <Content frame={frame} />
+</RecordingView>
+
+// Record
+const outputPath = await recorder.record({
+  output: "/path/to/output.mp4",
+  fps: 30,
+  totalFrames: 150,
+  onFrame: async ({ frameIndex }) => setFrame(frameIndex),
+});
+```
+
+<Callout type="warn">
+Only one recording can be in progress per session at a time. Calling `record()` while a recording is already active will throw an error.
+</Callout>

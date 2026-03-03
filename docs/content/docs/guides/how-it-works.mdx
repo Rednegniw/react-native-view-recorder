@@ -59,3 +59,7 @@ For `@shopify/react-native-skia` content, iOS uses a zero-copy Metal pipeline. A
 ## MP4 container
 
 The library writes a standard MP4 container. When `optimizeForNetwork` is enabled (the default), the moov atom is moved to the front of the file after encoding completes. This allows progressive playback without downloading the entire file.
+
+<Callout type="info">
+`optimizeForNetwork` only takes effect on iOS (via `AVAssetWriter.shouldOptimizeForNetworkUse`). Android's `MediaMuxer` does not expose an equivalent API, so the option is silently ignored.
+</Callout>

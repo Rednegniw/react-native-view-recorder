@@ -6,46 +6,25 @@ full: true
 
 `RecordOptions` is the configuration object passed to `recorder.record()`. It controls the output file, encoding parameters, and frame callbacks.
 
-## Required options
-
-| Option | Type | Description |
-|--------|------|-------------|
-| `output` | `string` | Absolute path for the output MP4 file |
-| `fps` | `number` | Frames per second |
-| `totalFrames` | `number` | Total number of frames to capture |
-
-## Callbacks
-
-| Option | Type | Description |
-|--------|------|-------------|
-| `onFrame` | `(info: FrameInfo) => void \| Promise<void>` | Called before each frame is captured. Use this to update the RecordingView's content for the next frame. The library waits for the returned promise before capturing. |
-| `onProgress` | `(info: RecordProgress) => void` | Called after each frame is captured and encoded. Use this for progress indicators. |
-
-### FrameInfo
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `frameIndex` | `number` | Current frame index (0-based) |
-| `totalFrames` | `number` | Total frames to capture |
-
-### RecordProgress
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `framesEncoded` | `number` | Number of frames encoded so far |
-| `totalFrames` | `number` | Total frames to capture |
-
-## Encoding options
+## Options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
+| `output` | `string` | **Required** | Absolute path for the output video file |
+| `fps` | `number` | **Required** | Frames per second |
+| `totalFrames` | `number` | - | Total number of frames to capture. When omitted, recording continues until `stop()` is called (event-driven mode). |
+| `onFrame` | `(info: `[`FrameInfo`](#frameinfo)`) => void \| Promise<void>` | - | Called before each frame is captured. Use this to update the RecordingView's content for the next frame. The library waits for the returned promise before capturing. |
+| `onProgress` | `(info: `[`RecordProgress`](#recordprogress)`) => void` | - | Called after each frame is captured and encoded. Use this for progress indicators. |
 | `width` | `number` | View's pixel width | Output video width in pixels |
 | `height` | `number` | View's pixel height | Output video height in pixels |
-| `codec` | `VideoCodec` | `"hevc"` | Video codec to use |
+| `codec` | [`VideoCodec`](#videocodec) | `"hevc"` | Video codec to use |
 | `bitrate` | `number` | Auto-scaled by resolution | Target bitrate in bits/second |
 | `quality` | `number` | - | Encoding quality hint, 0.0 (smallest file) to 1.0 (best quality) |
 | `keyFrameInterval` | `number` | `2` | Seconds between keyframes |
-| `optimizeForNetwork` | `boolean` | `true` | Move the moov atom to the front of the file for progressive playback |
+| `optimizeForNetwork` | `boolean` | `true` | Move the moov atom to the front of the file for progressive playback. iOS only; ignored on Android. |
+| `audioFile` | [`AudioFileOptions`](#audiofileoptions) | - | Mux an audio file into the video natively. Supports WAV, MP3, AAC, M4A. Cannot be combined with `mixAudio`. |
+| `mixAudio` | `(info: `[`AudioMixInfo`](#audiomixinfo)`) => Float32Array \| null` | - | Per-frame audio callback. Return interleaved Float32 samples, or `null` for silence. Cannot be combined with `audioFile`. |
+| `signal` | `AbortSignal` | - | Cancel the recording. The `record()` promise rejects with [`AbortError`](#aborterror) and the partial file is deleted. |
 
 ### VideoCodec
 
@@ -58,6 +37,63 @@ type VideoCodec = "h264" | "hevc" | "hevcWithAlpha";
 | `"h264"` | H.264/AVC. Widest compatibility. |
 | `"hevc"` | H.265/HEVC. Better compression at the same quality. Default. On Android, if the device lacks a hardware HEVC encoder, the library silently falls back to H.264. |
 | `"hevcWithAlpha"` | HEVC with alpha channel support. iOS only. |
+
+### FrameInfo
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `frameIndex` | `number` | Current frame index (0-based) |
+| `totalFrames` | `number \| undefined` | Total frames to capture, or `undefined` in event-driven mode |
+
+### RecordProgress
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `framesEncoded` | `number` | Number of frames encoded so far |
+| `totalFrames` | `number \| undefined` | Total frames to capture, or `undefined` in event-driven mode |
+
+### AudioFileOptions
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `path` | `string` | **Required** | Absolute path to the audio file |
+| `startTime` | `number` | `0` | Start time offset in seconds |
+
+### AudioMixInfo
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `frameIndex` | `number` | Current frame index |
+| `samplesNeeded` | `number` | Number of audio frames for this video frame. Return `samplesNeeded * channels` interleaved values. |
+| `sampleRate` | `number` | Audio sample rate (44100) |
+| `channels` | `number` | Number of audio channels (1) |
+
+### AbortError
+
+Exported class thrown when a recording is cancelled via `signal`. Use `instanceof AbortError` to distinguish cancellations from other errors.
+
+```tsx
+import { AbortError } from "react-native-view-recorder";
+
+const controller = new AbortController();
+
+try {
+  await recorder.record({
+    output: "/path/to/video.mp4",
+    fps: 30,
+    totalFrames: 300,
+    signal: controller.signal,
+    onFrame: async ({ frameIndex }) => setFrame(frameIndex),
+  });
+} catch (error) {
+  if (error instanceof AbortError) {
+    console.log("Recording cancelled");
+  }
+}
+
+// Cancel from elsewhere:
+controller.abort();
+```
 
 ## Full example
 
