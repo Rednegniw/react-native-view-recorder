@@ -37,6 +37,15 @@ export const DEMO_SECTIONS: DemoSection[] = [
           return require("../demos/AutoplaySkiaDemo").AutoplaySkiaDemo;
         },
       },
+      {
+        key: "synth-visualizer",
+        title: "Synth Visualizer",
+        description: "Record Ode to Joy with a waveform visualization via mixAudio.",
+        fullscreen: true,
+        get Component() {
+          return require("../demos/SynthVisualizerDemo").SynthVisualizerDemo;
+        },
+      },
     ],
   },
   {
@@ -44,7 +53,7 @@ export const DEMO_SECTIONS: DemoSection[] = [
     data: [
       {
         key: "standard",
-        title: "Standard Recording",
+        title: "Record a View",
         description: "Record a countdown timer with NumberFlow animations and encode to MP4.",
         get Component() {
           return require("../demos/StandardRecordingDemo").StandardRecordingDemo;
@@ -52,7 +61,7 @@ export const DEMO_SECTIONS: DemoSection[] = [
       },
       {
         key: "skia-canvas",
-        title: "Skia Canvas",
+        title: "Record a Skia Canvas",
         description: "Record an animated Skia canvas with rotating shapes and gradient fills.",
         get Component() {
           return require("../demos/SkiaCanvasDemo").SkiaCanvasDemo;
@@ -78,6 +87,15 @@ export const DEMO_SECTIONS: DemoSection[] = [
           "Mux a WAV audio file into the video natively via the audioFile option. No permissions needed.",
         get Component() {
           return require("../demos/AudioRecordingDemo").AudioRecordingDemo;
+        },
+      },
+      {
+        key: "mix-audio",
+        title: "Mix Audio",
+        description:
+          "Generate audio in real-time via the mixAudio callback. Produces a rising sine wave.",
+        get Component() {
+          return require("../demos/MixAudioDemo").MixAudioDemo;
         },
       },
     ],

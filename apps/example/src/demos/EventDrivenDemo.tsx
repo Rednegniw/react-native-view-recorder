@@ -109,7 +109,6 @@ export const EventDrivenDemo = () => {
 
   return (
     <View style={{ gap: 16 }}>
-      {/* RecordingView */}
       <View
         style={
           isRecording
