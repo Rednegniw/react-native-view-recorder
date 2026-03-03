@@ -21,6 +21,15 @@ RCT_EXTERN_METHOD(captureSkiaFrame:(NSString *)sessionId
 RCT_EXTERN_METHOD(finishSession:(NSString *)sessionId
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
+
+RCT_EXTERN_METHOD(cancelSession:(NSString *)sessionId
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+
+RCT_EXTERN_METHOD(writeAudioSamples:(NSString *)sessionId
+                  samples:(NSArray *)samples
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
 // clang-format on
 
 @end
