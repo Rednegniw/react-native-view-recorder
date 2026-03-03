@@ -46,6 +46,7 @@ describe("public API exports", () => {
     const _recorder: ViewRecorder = {
       sessionId: "test",
       record: async () => "/out.mp4",
+      stop: () => {},
     };
 
     expect(_frameInfo).toBeDefined();
@@ -53,6 +54,14 @@ describe("public API exports", () => {
     expect(_codec).toBeDefined();
     expect(_options).toBeDefined();
     expect(_recorder).toBeDefined();
+  });
+
+  test("exports AbortError class with correct name", () => {
+    expect(lib.AbortError).toBeDefined();
+    const err = new lib.AbortError();
+    expect(err.name).toBe("AbortError");
+    expect(err.message).toBe("Recording was aborted");
+    expect(err instanceof Error).toBe(true);
   });
 
   test("does not export NativeViewRecorder (internal)", () => {

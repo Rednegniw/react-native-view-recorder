@@ -5,6 +5,8 @@ const mockNative = {
   captureFrame: jest.fn().mockResolvedValue(undefined),
   captureSkiaFrame: jest.fn().mockResolvedValue(undefined),
   finishSession: jest.fn().mockResolvedValue("/output.mp4"),
+  cancelSession: jest.fn().mockResolvedValue(undefined),
+  writeAudioSamples: jest.fn().mockResolvedValue(undefined),
 };
 
 jest.mock("../src/NativeViewRecorder", () => ({
@@ -122,7 +124,7 @@ describe("useSkiaViewRecorder", () => {
       mockNative.captureSkiaFrame.mockRejectedValueOnce(new Error("skia capture failed"));
 
       await expect(record(baseOptions)).rejects.toThrow("skia capture failed");
-      expect(mockNative.finishSession).toHaveBeenCalledTimes(1);
+      expect(mockNative.cancelSession).toHaveBeenCalledTimes(1);
     });
 
     test("prevents concurrent recording", async () => {

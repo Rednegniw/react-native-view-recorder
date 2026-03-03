@@ -95,6 +95,7 @@ export const AutoplayStandardDemo = () => {
     const timeout = setTimeout(startRecording, 4000);
     return () => clearTimeout(timeout);
   }, [phase, startRecording]);
+
   const progress = currentFrame / TOTAL_FRAMES;
   const baseHue = 200 + progress * 120;
   const topColor = hslToHex(baseHue, 40, 72);

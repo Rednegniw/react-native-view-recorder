@@ -1,6 +1,8 @@
-// Zero-copy Skia frame capture for iOS.
-// Renders Skia content directly into a CVPixelBuffer via Metal,
-// bypassing drawHierarchy which cannot capture CAMetalLayer content.
+/**
+ * Zero-copy Skia frame capture for iOS.
+ * Renders Skia content directly into a CVPixelBuffer via Metal,
+ * bypassing drawHierarchy which cannot capture CAMetalLayer content.
+ */
 
 #import <CoreVideo/CoreVideo.h>
 #import <Foundation/Foundation.h>

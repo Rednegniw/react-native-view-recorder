@@ -69,11 +69,11 @@ export const SkiaCanvasDemo = () => {
         optimizeForNetwork: true,
 
         onFrame: async ({ frameIndex, totalFrames }) => {
-          setFrameProgress(frameIndex / totalFrames);
+          setFrameProgress(frameIndex / (totalFrames ?? 1));
         },
 
         onProgress: ({ framesEncoded, totalFrames }) => {
-          setProgress(Math.round((framesEncoded / totalFrames) * 100));
+          setProgress(Math.round((framesEncoded / (totalFrames ?? 1)) * 100));
         },
       });
 

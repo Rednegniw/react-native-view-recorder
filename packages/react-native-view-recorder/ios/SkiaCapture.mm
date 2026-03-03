@@ -1,5 +1,7 @@
-// Zero-copy Skia frame capture implementation.
-// Conditionally compiled: only active when @shopify/react-native-skia is installed.
+/**
+ * Zero-copy Skia frame capture implementation.
+ * Conditionally compiled: only active when @shopify/react-native-skia is installed.
+ */
 
 #import "SkiaCapture.h"
 
@@ -30,15 +32,20 @@ public:
       : RNSkCanvasProvider([]() {}), _surface(std::move(surface)), _width(width), _height(height) {}
 
   bool renderToCanvas(const std::function<void(SkCanvas *)> &cb) override {
-    if (!_surface)
-      return false;
+    if (!_surface) {
+        return false;
+    }
+
+    // Provide Skia with the canvas from our wrapped SkSurface
     cb(_surface->getCanvas());
+
     return true;
   }
 
   int getWidth() override {
     return _width;
   }
+
   int getHeight() override {
     return _height;
   }
@@ -47,6 +54,7 @@ private:
   sk_sp<SkSurface> _surface;
   int _width;
   int _height;
+
 };
 
 // Cached texture cache (created once, reused across frames)
@@ -56,6 +64,7 @@ static CVMetalTextureCacheRef getTextureCache(id<MTLDevice> device) {
   if (!sTextureCache) {
     CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &sTextureCache);
   }
+
   return sTextureCache;
 }
 
@@ -70,10 +79,12 @@ static CVMetalTextureCacheRef getTextureCache(id<MTLDevice> device) {
   // Get the Skia view implementation from the SkiaUIView
   SEL implSel = NSSelectorFromString(@"impl");
   if (![skiaUIView respondsToSelector:implSel]) {
-    if (error)
+    if (error) {
       *error = [NSError errorWithDomain:@"SkiaCapture"
                                    code:1
                                userInfo:@{NSLocalizedDescriptionKey : @"View is not a SkiaUIView"}];
+    }
+
     return NO;
   }
 
@@ -83,28 +94,34 @@ static CVMetalTextureCacheRef getTextureCache(id<MTLDevice> device) {
   auto appleView = implFunc(skiaUIView, implSel);
 
   if (!appleView) {
-    if (error)
+    if (error) {
       *error = [NSError errorWithDomain:@"SkiaCapture"
                                    code:2
                                userInfo:@{NSLocalizedDescriptionKey : @"SkiaUIView impl is null"}];
+    }
+
     return NO;
   }
 
   auto drawView = appleView->getDrawView();
   if (!drawView) {
-    if (error)
+    if (error) {
       *error = [NSError errorWithDomain:@"SkiaCapture"
                                    code:3
                                userInfo:@{NSLocalizedDescriptionKey : @"Skia draw view is null"}];
+    }
+
     return NO;
   }
 
   auto renderer = drawView->getRenderer();
   if (!renderer) {
-    if (error)
+    if (error) {
       *error = [NSError errorWithDomain:@"SkiaCapture"
                                    code:4
                                userInfo:@{NSLocalizedDescriptionKey : @"Skia renderer is null"}];
+    }
+
     return NO;
   }
 
@@ -112,10 +129,12 @@ static CVMetalTextureCacheRef getTextureCache(id<MTLDevice> device) {
   auto &metalCtx = MetalContext::getInstance();
   GrDirectContext *grContext = metalCtx.getDirectContext();
   if (!grContext) {
-    if (error)
+    if (error) {
       *error = [NSError errorWithDomain:@"SkiaCapture"
                                    code:5
                                userInfo:@{NSLocalizedDescriptionKey : @"Skia GrDirectContext is null"}];
+    }
+
     return NO;
   }
 
@@ -124,10 +143,12 @@ static CVMetalTextureCacheRef getTextureCache(id<MTLDevice> device) {
   id<MTLDevice> device = MTLCreateSystemDefaultDevice();
   CVMetalTextureCacheRef cache = getTextureCache(device);
   if (!cache) {
-    if (error)
+    if (error) {
       *error = [NSError errorWithDomain:@"SkiaCapture"
                                    code:6
                                userInfo:@{NSLocalizedDescriptionKey : @"Failed to create CVMetalTextureCache"}];
+    }
+
     return NO;
   }
 
@@ -137,23 +158,28 @@ static CVMetalTextureCacheRef getTextureCache(id<MTLDevice> device) {
                                                               MTLPixelFormatBGRA8Unorm, width, height, 0, &cvTexture);
 
   if (result != kCVReturnSuccess || !cvTexture) {
-    if (error)
-      *error = [NSError errorWithDomain:@"SkiaCapture"
-                                   code:7
-                               userInfo:@{
-                                 NSLocalizedDescriptionKey : [NSString
-                                     stringWithFormat:@"CVMetalTextureCacheCreateTextureFromImage failed: %d", result]
-                               }];
+    NSString *msg = [NSString stringWithFormat:
+        @"CVMetalTextureCacheCreateTextureFromImage failed: %d", result];
+
+    if (error) {
+        *error = [NSError errorWithDomain:@"SkiaCapture"
+                                          code:7
+                                      userInfo:@{NSLocalizedDescriptionKey : msg}];
+    }
+
     return NO;
   }
 
   id<MTLTexture> metalTexture = CVMetalTextureGetTexture(cvTexture);
   if (!metalTexture) {
     CFRelease(cvTexture);
-    if (error)
-      *error = [NSError errorWithDomain:@"SkiaCapture"
-                                   code:8
-                               userInfo:@{NSLocalizedDescriptionKey : @"CVMetalTextureGetTexture returned nil"}];
+
+    if (error) {
+        *error = [NSError errorWithDomain:@"SkiaCapture"
+                                          code:8
+                                      userInfo:@{NSLocalizedDescriptionKey : @"CVMetalTextureGetTexture failed"}];
+    }
+
     return NO;
   }
 
@@ -168,19 +194,23 @@ static CVMetalTextureCacheRef getTextureCache(id<MTLDevice> device) {
 
   if (!surface) {
     CFRelease(cvTexture);
-    if (error)
-      *error =
-          [NSError errorWithDomain:@"SkiaCapture"
-                              code:9
-                          userInfo:@{NSLocalizedDescriptionKey : @"Failed to create SkSurface from Metal texture"}];
+
+    if (error) {
+      *error = [NSError errorWithDomain:@"SkiaCapture"
+                                   code:9
+                               userInfo:@{NSLocalizedDescriptionKey : @"Failed to create SkSurface from Metal texture"}];
+    }
+
     return NO;
   }
 
-  // The Skia picture contains drawing commands in view point coordinates.
-  // The renderer applies canvas->scale(pixelDensity, pixelDensity) before drawing.
-  // We need a pre-scale so the combined transform maps points to output pixels:
-  //   preScale * pixelDensity = outputSize / viewPointSize
-  //   preScale = outputSize / (viewPointSize * pixelDensity)
+  /**
+   * The Skia picture contains drawing commands in view point coordinates.
+   * The renderer applies canvas->scale(pixelDensity, pixelDensity) before drawing.
+   * We need a pre-scale so the combined transform maps points to output pixels:
+   *   preScale * pixelDensity = outputSize / viewPointSize
+   *   preScale = outputSize / (viewPointSize * pixelDensity)
+   */
   CGFloat viewWidth = skiaUIView.bounds.size.width;
   CGFloat viewHeight = skiaUIView.bounds.size.height;
   CGFloat pd = skiaUIView.contentScaleFactor;

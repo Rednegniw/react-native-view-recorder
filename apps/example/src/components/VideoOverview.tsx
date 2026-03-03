@@ -1,7 +1,8 @@
+import { Ionicons } from "@expo/vector-icons";
 import { File } from "expo-file-system";
 import { useVideoPlayer, VideoView } from "expo-video";
-import { useMemo } from "react";
-import { Text, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { Pressable, Text, View } from "react-native";
 import { colors } from "../theme/colors";
 
 interface VideoOverviewProps {
@@ -49,10 +50,21 @@ export const VideoOverview = ({
   bitrate,
   label,
 }: VideoOverviewProps) => {
+  const [isMuted, setIsMuted] = useState(false);
+
   const player = useVideoPlayer(uri, (p) => {
     p.loop = true;
+    p.muted = false;
+    p.volume = 1;
+    p.audioMixingMode = "doNotMix";
     p.play();
   });
+
+  useEffect(() => {
+    player.muted = isMuted;
+    player.volume = 1;
+    player.audioMixingMode = "doNotMix";
+  }, [player, isMuted]);
 
   const { fileSize, duration, displayBitrate } = useMemo(() => {
     const fileUri = uri.startsWith("file://") ? uri : `file://${uri}`;
@@ -85,6 +97,7 @@ export const VideoOverview = ({
         style={{
           aspectRatio: width / height,
           backgroundColor: "#000",
+          position: "relative",
           ...(!label ? { borderTopLeftRadius: 14, borderTopRightRadius: 14 } : {}),
         }}
       >
@@ -94,6 +107,27 @@ export const VideoOverview = ({
           contentFit="contain"
           nativeControls={false}
         />
+        <Pressable
+          onPress={() => setIsMuted((prev) => !prev)}
+          hitSlop={8}
+          style={({ pressed }) => ({
+            position: "absolute",
+            right: 10,
+            bottom: 10,
+            width: 34,
+            height: 34,
+            borderRadius: 17,
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: pressed ? "rgba(0,0,0,0.72)" : "rgba(0,0,0,0.58)",
+            borderWidth: 1,
+            borderColor: "rgba(255,255,255,0.22)",
+          })}
+          accessibilityRole="button"
+          accessibilityLabel={isMuted ? "Turn sound on" : "Turn sound off"}
+        >
+          <Ionicons name={isMuted ? "volume-mute" : "volume-high"} size={18} color="#fff" />
+        </Pressable>
       </View>
 
       {/* Metadata grid */}
