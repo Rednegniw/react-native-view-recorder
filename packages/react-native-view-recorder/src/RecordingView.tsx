@@ -17,116 +17,142 @@ const LINKING_ERROR =
  */
 export type VideoCodec = "h264" | "hevc" | "hevcWithAlpha";
 
-/** Info passed to the onFrame callback before each frame capture. */
-export interface FrameInfo {
+/**
+ * Info passed to the onFrame callback before each frame capture.
+ * `T` is `number` when `totalFrames` is provided, `undefined` otherwise.
+ */
+export interface FrameInfo<T extends number | undefined = number | undefined> {
   frameIndex: number;
-  totalFrames: number | undefined;
+  totalFrames: T;
 }
 
-/** Progress info passed to the onProgress callback after each frame. */
-export interface RecordProgress {
+/**
+ * Progress info passed to the onProgress callback after each frame.
+ * `T` is `number` when `totalFrames` is provided, `undefined` otherwise.
+ */
+export interface RecordProgress<T extends number | undefined = number | undefined> {
   framesEncoded: number;
-  totalFrames: number | undefined;
+  totalFrames: T;
 }
 
-/** Options for the audioFile prop. */
+/**
+ * Options for the audioFile prop.
+ */
 export interface AudioFileOptions {
-  /** Absolute path to the audio file (WAV, MP3, AAC, M4A, etc.). */
+  /**
+   * Absolute path to the audio file (WAV, MP3, AAC, M4A, etc.).
+   */
   path: string;
-  /** Start time offset in seconds. Defaults to 0 (beginning of file). */
+  /**
+   * Start time offset in seconds. Defaults to 0 (beginning of file).
+   */
   startTime?: number;
 }
 
-/** Info passed to the mixAudio callback. */
+/**
+ * Info passed to the mixAudio callback.
+ */
 export interface AudioMixInfo {
   frameIndex: number;
-  /** Number of audio frames for this video frame. Return samplesNeeded * channels interleaved values. */
+  /**
+   * Number of audio frames for this video frame.
+   * Return samplesNeeded * channels interleaved values.
+   */
   samplesNeeded: number;
   sampleRate: number;
   channels: number;
 }
 
-/** Options for the record() function. */
-export interface RecordOptions {
+/**
+ * Shared options for record(). Excludes totalFrames and callbacks,
+ * which are defined in the discriminated union branches below.
+ */
+interface RecordOptionsBase {
   /** Absolute path for the output video file. */
   output: string;
-
   /** Frames per second. */
   fps: number;
-
-  /**
-   * Total number of frames to capture.
-   * When omitted, recording continues until stop() is called.
-   */
-  totalFrames?: number;
-
-  /**
-   * Called before each frame is captured. Use this to update the
-   * RecordingView's content for the next frame. The library waits
-   * for the returned promise (if any) before capturing.
-   */
-  onFrame?: (info: FrameInfo) => void | Promise<void>;
-
-  /**
-   * Called after each frame is captured and encoded.
-   * Use this to update a progress indicator.
-   */
-  onProgress?: (info: RecordProgress) => void;
-
-  /**
-   * Output video width in pixels.
-   * Defaults to the RecordingView's rendered pixel width.
-   */
+  /** Output video width in pixels. Defaults to the RecordingView's rendered pixel width. */
   width?: number;
-
-  /**
-   * Output video height in pixels.
-   * Defaults to the RecordingView's rendered pixel height.
-   */
+  /** Output video height in pixels. Defaults to the RecordingView's rendered pixel height. */
   height?: number;
-
   /**
    * Video codec. Defaults to "hevc".
    * "hevcWithAlpha" outputs .mov instead of .mp4 (alpha video is not supported in .mp4).
    */
   codec?: VideoCodec;
-
   /** Target bitrate in bits/second. Auto-scaled by resolution when omitted. */
   bitrate?: number;
-
   /**
    * Encoding quality hint from 0.0 (smallest) to 1.0 (best).
    * iOS: VBR hint applied alongside bitrate. Android: mapped to a bitrate multiplier (0.25x to 3x).
    */
   quality?: number;
-
   /** Seconds between keyframes. Defaults to 2. */
   keyFrameInterval?: number;
-
   /** Move moov atom to front for progressive playback. Defaults to true. */
   optimizeForNetwork?: boolean;
-
   /** AbortSignal to cancel the recording. Rejects with AbortError and deletes the partial file. */
   signal?: AbortSignal;
-
-  /**
-   * Mux an audio file into the video. The native side decodes and muxes
-   * the audio directly, bypassing the JS bridge. Supports WAV, MP3, AAC, M4A, etc.
-   * Cannot be combined with mixAudio.
-   */
-  audioFile?: AudioFileOptions;
-
-  /**
-   * Per-frame audio mixing callback. Return interleaved Float32 samples
-   * for one frame's duration (samplesNeeded * channels values), or null for silence.
-   * No permissions required. Cannot be combined with audioFile.
-   */
-  mixAudio?: (info: AudioMixInfo) => Float32Array | null;
 }
 
-/** Handle returned by useViewRecorder. */
+/**
+ * Audio source options. Only one audio source can be used at a time:
+ * either audioFile (native file muxing) or mixAudio (JS callback), but not both.
+ */
+type AudioSourceOptions =
+  | {
+      /**
+       * Mux an audio file into the video. The native side decodes and muxes
+       * the audio directly, bypassing the JS bridge. Supports WAV, MP3, AAC, M4A, etc.
+       */
+      audioFile?: AudioFileOptions;
+      mixAudio?: never;
+    }
+  | {
+      audioFile?: never;
+      /**
+       * Per-frame audio mixing callback. Return interleaved Float32 samples
+       * for one frame's duration (samplesNeeded * channels values), or null for silence.
+       * No permissions required.
+       */
+      mixAudio?: (info: AudioMixInfo) => Float32Array | null;
+    };
+
+/**
+ * Options for the record() function.
+ *
+ * When `totalFrames` is provided, `onFrame` and `onProgress` receive it as `number`.
+ * When omitted (event-driven mode), they receive `undefined`.
+ */
+export type RecordOptions = RecordOptionsBase &
+  AudioSourceOptions &
+  (
+    | {
+        /** Total number of frames to capture. */
+        totalFrames: number;
+        /** Called before each frame is captured. */
+        onFrame?: (info: FrameInfo<number>) => void | Promise<void>;
+        /** Called after each frame is captured and encoded. */
+        onProgress?: (info: RecordProgress<number>) => void;
+      }
+    | {
+        /** When omitted, recording continues until stop() is called. */
+        totalFrames?: never;
+        /** Called before each frame is captured. */
+        onFrame?: (info: FrameInfo<undefined>) => void | Promise<void>;
+        /** Called after each frame is captured and encoded. */
+        onProgress?: (info: RecordProgress<undefined>) => void;
+      }
+  );
+
+/**
+ * Handle returned by useViewRecorder.
+ */
 export interface ViewRecorder {
-  /** Pass this as the sessionId prop on RecordingView. */
+  /**
+   * Pass this as the sessionId prop on RecordingView.
+   */
   sessionId: string;
 
   /**
@@ -154,7 +180,9 @@ export class AbortError extends Error {
 
 // ── Audio config resolution ───────────────────────────────────────
 
-/** @internal */
+/**
+ * @internal
+ */
 export function resolveAudioConfig(options: RecordOptions) {
   const { mixAudio, audioFile } = options;
   const hasAudio = !!mixAudio || !!audioFile;
@@ -173,22 +201,45 @@ export function resolveAudioConfig(options: RecordOptions) {
   return { audioSampleRate, audioChannels, nativeAudioOptions };
 }
 
+// ── Base64 encoding ──────────────────────────────────────────────
+
+// Available globally in Hermes (RN 0.74+) and Node 16+.
+declare function btoa(data: string): string;
+
+/**
+ * @internal
+ * Encode a Float32Array's raw bytes as a base64 string for efficient
+ * bridge transfer (one string instead of N individually boxed numbers).
+ */
+export function float32ToBase64(samples: Float32Array): string {
+  const bytes = new Uint8Array(samples.buffer, samples.byteOffset, samples.byteLength);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]!);
+  }
+  return btoa(binary);
+}
+
 // ── Shared recording loop ─────────────────────────────────────────
 
-/** @internal */
+/**
+ * @internal
+ */
 export interface LoopParams {
   sessionId: string;
   captureFrame: () => Promise<void>;
   totalFrames: number | undefined;
   signal: AbortSignal | undefined;
-  stopRef: React.MutableRefObject<boolean>;
+  stopRef: React.RefObject<boolean>;
   onFrame?: (info: FrameInfo) => void | Promise<void>;
   onProgress?: (info: RecordProgress) => void;
   mixAudio?: (info: AudioMixInfo) => Float32Array | null;
   audioMixInfo?: { sampleRate: number; channels: number; fps: number };
 }
 
-/** @internal */
+/**
+ * @internal
+ */
 export async function runRecordingLoop(params: LoopParams): Promise<void> {
   const {
     sessionId,
@@ -225,7 +276,15 @@ export async function runRecordingLoop(params: LoopParams): Promise<void> {
         channels: audioMixInfo.channels,
       });
       if (samples) {
-        await NativeViewRecorder!.writeAudioSamples(sessionId, Array.from(samples));
+        /**
+         * Fire without awaiting so audio writes happen concurrently on the
+         * native audio queue, matching the audioFile path's behavior.
+         * AVAssetWriter requires both tracks to advance roughly together;
+         * awaiting here would serialize them and cause a deadlock.
+         */
+        void NativeViewRecorder!
+          .writeAudioSamples(sessionId, float32ToBase64(samples))
+          .catch(() => {});
       }
     }
 
@@ -306,14 +365,18 @@ export function useViewRecorder(): ViewRecorder {
           ? { sampleRate: audioSampleRate, channels: audioChannels, fps: options.fps }
           : undefined;
 
+      /**
+       * Callbacks are correlated with totalFrames by the RecordOptions union,
+       * but destructuring loses that correlation. Safe to widen for the internal loop.
+       */
       await runRecordingLoop({
         sessionId,
         captureFrame: () => NativeViewRecorder!.captureFrame(sessionId),
         totalFrames,
         signal,
         stopRef,
-        onFrame,
-        onProgress,
+        onFrame: onFrame as LoopParams["onFrame"],
+        onProgress: onProgress as LoopParams["onProgress"],
         mixAudio,
         audioMixInfo,
       });

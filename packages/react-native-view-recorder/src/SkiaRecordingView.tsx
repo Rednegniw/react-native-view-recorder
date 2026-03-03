@@ -4,6 +4,7 @@ import { findNodeHandle, type ViewProps } from "react-native";
 import NativeViewRecorder from "./NativeViewRecorder";
 import {
   AbortError,
+  type LoopParams,
   type RecordOptions,
   resolveAudioConfig,
   runRecordingLoop,
@@ -140,14 +141,18 @@ export function useSkiaViewRecorder(): ViewRecorder & {
           ? { sampleRate: audioSampleRate, channels: audioChannels, fps: options.fps }
           : undefined;
 
+      /**
+       * Callbacks are correlated with totalFrames by the RecordOptions union,
+       * but destructuring loses that correlation. Safe to widen for the internal loop.
+       */
       await runRecordingLoop({
         sessionId,
         captureFrame: () => NativeViewRecorder!.captureSkiaFrame(sessionId, viewTag),
         totalFrames,
         signal,
         stopRef,
-        onFrame,
-        onProgress,
+        onFrame: onFrame as LoopParams["onFrame"],
+        onProgress: onProgress as LoopParams["onProgress"],
         mixAudio,
         audioMixInfo,
       });
