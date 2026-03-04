@@ -50,7 +50,7 @@ export function GitHubStarsButton() {
       aria-label={label}
       className="group ms-auto inline-flex items-center gap-1.5 rounded-md border mt-1 border-white/8 bg-white/3 px-2 py-1.5 text-xs text-fd-muted-foreground transition-colors hover:border-(--brand-accent)/30 hover:bg-(--brand-accent)/4 hover:text-fd-foreground"
     >
-      <Star className="size-3.5 fill-(--brand-accent) text-(--brand-accent) transition-transform group-hover:scale-110" />
+      <Star className="size-3.5 fill-amber-400 text-amber-400 transition-transform group-hover:scale-110" />
 
       <span className="tabular-nums">
         {mounted ? (
