@@ -20,13 +20,6 @@ Pod::Spec.new do |s|
 
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
-    'HEADER_SEARCH_PATHS' => [
-      '$(inherited)',
-      "\"#{File.join(__dir__, '..', '..', 'node_modules', '@shopify', 'react-native-skia', 'cpp')}\"",
-      "\"#{File.join(__dir__, '..', '..', 'node_modules', '@shopify', 'react-native-skia', 'apple')}\"",
-      "\"#{File.join(__dir__, '..', '..', 'node_modules', '@shopify', 'react-native-skia', 'cpp', 'skia')}\"",
-    ].join(' '),
-    'CLANG_CXX_LANGUAGE_STANDARD' => 'c++17',
   }
 
   s.dependency 'React-Core'

@@ -4,4 +4,3 @@
  */
 
 #import "ReactTypes.h"
-#import "SkiaCapture.h"
