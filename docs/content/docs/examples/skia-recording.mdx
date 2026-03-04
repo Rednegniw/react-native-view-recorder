@@ -1,10 +1,10 @@
 ---
 title: Skia Recording
-description: Record an animated Skia canvas with zero-copy Metal capture to MP4
+description: Record an animated Skia canvas to MP4 video
 full: true
 ---
 
-Use `useSkiaViewRecorder` and `SkiaRecordingView` to capture Skia canvases. On iOS, this uses a zero-copy Metal pipeline that renders Skia directly into the encoder's pixel buffers.
+Record `@shopify/react-native-skia` canvases using the standard `RecordingView` and `useViewRecorder`. No special components needed.
 
 ```VideoExample video=/videos/skia-recording.mp4
 import { useState, useCallback } from "react";
@@ -14,14 +14,15 @@ import { useVideoPlayer, VideoView } from "expo-video";
 import {
   Canvas,
   Circle,
+  Fill,
   Group,
   LinearGradient,
   RoundedRect,
   vec,
 } from "@shopify/react-native-skia";
 import {
-  SkiaRecordingView,
-  useSkiaViewRecorder,
+  RecordingView,
+  useViewRecorder,
 } from "react-native-view-recorder";
 
 const FPS = 60;
@@ -43,7 +44,7 @@ function hsl(h: number, s: number, l: number) {
 }
 
 export default function SkiaRecording() {
-  const recorder = useSkiaViewRecorder();
+  const recorder = useViewRecorder();
   const [progress, setProgress] = useState(0);
   const [recording, setRecording] = useState(false);
   const [videoUri, setVideoUri] = useState<string | null>(null);
@@ -136,8 +137,7 @@ export default function SkiaRecording() {
         }}
       >
         {!videoUri ? (
-          <SkiaRecordingView
-            viewRef={recorder.viewRef}
+          <RecordingView
             sessionId={recorder.sessionId}
             style={{ width: "100%", aspectRatio: 1 }}
             onLayout={(e) =>
@@ -145,6 +145,7 @@ export default function SkiaRecording() {
             }
           >
             <Canvas style={{ flex: 1 }}>
+              <Fill color="black" />
               {/* Rotating rounded rectangle with gradient */}
               <Group
                 transform={[
@@ -187,7 +188,7 @@ export default function SkiaRecording() {
                 );
               })}
             </Canvas>
-          </SkiaRecordingView>
+          </RecordingView>
         ) : (
           <VideoView
             player={player}
@@ -217,16 +218,6 @@ export default function SkiaRecording() {
 }
 ```
 
-### Key differences from standard recording
-
-| | Standard | Skia |
-|---|---|---|
-| Hook | `useViewRecorder()` | `useSkiaViewRecorder()` |
-| Wrapper | `RecordingView` | `SkiaRecordingView` |
-| Extra prop | - | `viewRef={recorder.viewRef}` |
-| iOS capture | `drawHierarchy` to bitmap | Zero-copy Metal texture |
-| Android capture | `PixelCopy` | `PixelCopy` (same) |
-
 <Callout type="info">
-On iOS, standard `drawHierarchy` cannot capture `CAMetalLayer` content (used by Skia). `SkiaRecordingView` uses a separate Metal pipeline that renders Skia directly into the encoder's `CVPixelBuffer`, avoiding the bitmap step entirely.
+The `<Fill color="black" />` is important. Skia canvases have a transparent background by default. Without an opaque fill, previous frame content persists in the Metal drawable on iOS and gets composited into subsequent captures. See the [Skia guide](/docs/guides/skia) for details.
 </Callout>

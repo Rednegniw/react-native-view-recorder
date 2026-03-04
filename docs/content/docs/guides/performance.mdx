@@ -61,10 +61,6 @@ See the [Codec Selection](/docs/guides/codec-selection#bitrate) guide for bitrat
 
 ## Android: keep the view in-bounds
 
-<Callout type="info">
-This only affects the standard `RecordingView` on Android. `SkiaRecordingView` is not impacted.
-</Callout>
-
-On Android, the standard capture path uses `PixelCopy` for GPU-based frame capture. But this only works when the `RecordingView` fits entirely within the window. If the view extends beyond the window bounds (for example, it's wider than the screen or partially off the edge), the library falls back to `View.draw()` with CPU-side rendering and scaling, which is significantly slower.
+On Android, the capture path uses `PixelCopy` for GPU-based frame capture. But this only works when the `RecordingView` fits entirely within the window. If the view extends beyond the window bounds (for example, it's wider than the screen or partially off the edge), the library falls back to `View.draw()` with CPU-side rendering and scaling, which is significantly slower.
 
 So, make sure your `RecordingView` is fully within the screen during recording.

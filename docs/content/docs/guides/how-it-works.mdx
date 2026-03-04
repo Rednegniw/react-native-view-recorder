@@ -19,21 +19,13 @@ After all frames are captured, the encoder finalizes the MP4 container and retur
 
 ## iOS
 
-### Standard view capture
+### View capture
 
-`drawHierarchy(in:afterScreenUpdates:)` renders the view hierarchy into a bitmap context. The bitmap is then copied into a `CVPixelBuffer` and appended to `AVAssetWriter` for encoding.
-
-<Callout type="info">
-`drawHierarchy` cannot capture `CAMetalLayer` content (used by Skia). For Skia views, the library uses a separate Metal capture pipeline. See [SkiaRecordingView](/docs/api/skia-recording-view) for details.
-</Callout>
-
-### Skia view capture
-
-For `@shopify/react-native-skia` content, iOS uses a zero-copy Metal pipeline. A `CVPixelBuffer` is created with an `IOSurface`-backed Metal texture, and Skia renders directly into it via `SkSurfaces::WrapBackendTexture`. This bypasses `drawHierarchy` entirely and avoids any bitmap copy.
+`drawHierarchy(in:afterScreenUpdates:true)` renders the view hierarchy into a `CVPixelBuffer`-backed bitmap context. The `afterScreenUpdates: true` parameter ensures all layer types are captured, including `CAMetalLayer` content (used by Skia). The pixel buffer is then appended to `AVAssetWriter` for encoding.
 
 ### Video encoding
 
-`AVAssetWriter` with `AVAssetWriterInput` configured for H.264 or HEVC. Pixel buffers (from either capture path) are appended to the asset writer's input.
+`AVAssetWriter` with `AVAssetWriterInput` configured for H.264 or HEVC. Pixel buffers are appended to the asset writer's input.
 
 ### Supported codecs
 

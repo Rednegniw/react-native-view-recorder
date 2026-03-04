@@ -1,10 +1,4 @@
 {
   "title": "API Reference",
-  "pages": [
-    "recording-view",
-    "use-view-recorder",
-    "skia-recording-view",
-    "use-skia-view-recorder",
-    "record-options"
-  ]
+  "pages": ["recording-view", "use-view-recorder", "record-options"]
 }
