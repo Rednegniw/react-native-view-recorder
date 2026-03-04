@@ -1,0 +1,48 @@
+---
+title: Recording Skia Canvases
+description: How to record @shopify/react-native-skia content to video
+full: true
+---
+
+Recording Skia canvases works the same as recording any other React Native view. Wrap your content in `RecordingView`, use `useViewRecorder`, and call `record()`.
+
+## The one thing to know
+
+Skia's `<Canvas>` has a transparent background by default. On iOS, this means previous frame content persists in the Metal drawable and gets composited into subsequent captures, producing a smeared/blended effect.
+
+The fix is simple: add an opaque background as the first child of your Canvas.
+
+```tsx
+import { Canvas, Fill } from "@shopify/react-native-skia";
+import { RecordingView, useViewRecorder } from "react-native-view-recorder";
+
+function MyRecorder() {
+  const recorder = useViewRecorder();
+
+  return (
+    <RecordingView sessionId={recorder.sessionId} style={{ width: 640, height: 480 }}>
+      <Canvas style={{ flex: 1 }}>
+        <Fill color="black" />
+        {/* Your Skia content here */}
+      </Canvas>
+    </RecordingView>
+  );
+}
+```
+
+The `<Fill color="black" />` clears the canvas each frame before your content is drawn. Use any color that suits your design.
+
+<Callout type="warn">
+Without an opaque `<Fill>`, your recording will look correct for the first frame but each subsequent frame will blend on top of previous ones. If your recorded video looks smeared or ghosted, this is almost certainly the cause.
+</Callout>
+
+## Full example
+
+See the [Skia Recording example](/docs/examples/skia-recording) for a complete working demo with animated content.
+
+## Notes
+
+- This works on both iOS and Android with no platform-specific code
+- On iOS, `drawHierarchy(afterScreenUpdates: true)` captures all layer types including `CAMetalLayer`
+- On Android, `PixelCopy` captures from the window compositor, which includes Skia's TextureView
+- If your Skia canvas already has an opaque background (e.g. it fills the entire area with a color or image), you don't need an extra `<Fill>`

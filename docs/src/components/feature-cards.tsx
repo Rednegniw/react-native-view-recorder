@@ -24,7 +24,7 @@ const features: Feature[] = [
     demo: <SkiaDemo />,
     title: "Skia Views Too",
     description:
-      "Zero-copy Metal capture for Skia canvases on iOS. PixelCopy for all view types on Android.",
+      "Record @shopify/react-native-skia canvases with the same RecordingView. No special setup needed.",
   },
   {
     demo: <FrameByFrameDemo />,

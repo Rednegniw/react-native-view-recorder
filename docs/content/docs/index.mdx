@@ -14,7 +14,7 @@ React Native View Recorder is a library designed to record any React Native view
 
 It's great for providing your users with the ability to export videos from your app, whether it's a summary to share, a replay of a game, or a recording of their own animations/creations.
 
-It supports Skia! This enables many more use cases - as far as I know, no other library can record Skia content to video. The Skia pipeline is zero-copy and works with all Skia renderers (Canvas, OpenGL, Metal) since it captures directly from the GPU.
+It supports Skia! This enables many more use cases. Just wrap your Skia canvas in `RecordingView` like any other view. See the [Skia guide](/docs/guides/skia) for details.
 
 It also supports audio: mux any audio file (WAV, MP3, AAC, M4A) into your video natively, or use a per-frame callback for synthesized audio. No permissions required.
 
