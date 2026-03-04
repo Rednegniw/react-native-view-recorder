@@ -1,6 +1,7 @@
 import {
   Canvas,
   Circle,
+  Fill,
   Group,
   LinearGradient,
   RoundedRect,
@@ -10,7 +11,7 @@ import { File, Paths } from "expo-file-system";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useCallback, useState } from "react";
 import { Text, View } from "react-native";
-import { SkiaRecordingView, useSkiaViewRecorder } from "react-native-view-recorder";
+import { RecordingView, useViewRecorder } from "react-native-view-recorder";
 import { RipplePressable } from "../components/RipplePressable";
 
 const FPS = 60;
@@ -32,7 +33,7 @@ function hsl(h: number, s: number, l: number): string {
 }
 
 export const AutoplaySkiaDemo = () => {
-  const recorder = useSkiaViewRecorder();
+  const recorder = useViewRecorder();
   const [recording, setRecording] = useState(false);
   const [videoUri, setVideoUri] = useState<string | null>(null);
   const [frameProgress, setFrameProgress] = useState(0);
@@ -117,14 +118,14 @@ export const AutoplaySkiaDemo = () => {
         }}
       >
         {!videoUri ? (
-          <SkiaRecordingView
-            viewRef={recorder.viewRef}
+          <RecordingView
             sessionId={recorder.sessionId}
             style={{ width: "100%", aspectRatio: 1 }}
             pointerEvents="none"
             onLayout={(e) => setCanvasSize(e.nativeEvent.layout.width)}
           >
             <Canvas style={{ flex: 1 }}>
+              <Fill color="black" />
               {/* Rotating rounded rectangle with gradient */}
               <Group
                 transform={[
@@ -158,7 +159,7 @@ export const AutoplaySkiaDemo = () => {
                 );
               })}
             </Canvas>
-          </SkiaRecordingView>
+          </RecordingView>
         ) : (
           <VideoView
             player={player}

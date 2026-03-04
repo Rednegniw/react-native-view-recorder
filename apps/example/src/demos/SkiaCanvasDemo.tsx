@@ -1,15 +1,16 @@
 import {
   Canvas,
   Circle,
+  Fill,
   Group,
   LinearGradient,
   RoundedRect,
   vec,
 } from "@shopify/react-native-skia";
 import { File, Paths } from "expo-file-system";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { Text, View } from "react-native";
-import { SkiaRecordingView, useSkiaViewRecorder } from "react-native-view-recorder";
+import { RecordingView, useViewRecorder } from "react-native-view-recorder";
 import { RippleButton } from "../components/RippleButton";
 import { VideoOverview } from "../components/VideoOverview";
 import { colors } from "../theme/colors";
@@ -37,7 +38,7 @@ function hslToHex(h: number, s: number, l: number): string {
 type Status = "idle" | "recording" | "done" | "error";
 
 export const SkiaCanvasDemo = () => {
-  const recorder = useSkiaViewRecorder();
+  const recorder = useViewRecorder();
 
   const [status, setStatus] = useState<Status>("idle");
   const [videoUri, setVideoUri] = useState<string | null>(null);
@@ -87,7 +88,7 @@ export const SkiaCanvasDemo = () => {
 
   return (
     <View style={{ gap: 16 }}>
-      {/* SkiaRecordingView: always mounted, offscreen when not recording.
+      {/* RecordingView: always mounted, offscreen when not recording.
           Decorative styles on a wrapper so they don't get captured into video frames. */}
       <View
         style={
@@ -101,8 +102,7 @@ export const SkiaCanvasDemo = () => {
             : { position: "absolute", left: -9999, top: -9999 }
         }
       >
-        <SkiaRecordingView
-          viewRef={recorder.viewRef}
+        <RecordingView
           sessionId={recorder.sessionId}
           style={{ width: "100%", aspectRatio: WIDTH / HEIGHT }}
           pointerEvents={isRecording ? "auto" : "none"}
@@ -113,7 +113,7 @@ export const SkiaCanvasDemo = () => {
             canvasHeight={canvasSize.height}
             onCanvasLayout={setCanvasSize}
           />
-        </SkiaRecordingView>
+        </RecordingView>
       </View>
 
       {/* Video result */}
@@ -224,6 +224,9 @@ function SkiaContent({
       }
     >
       <Canvas style={{ width: "100%", height: "100%" }}>
+        {/* Clear previous frame */}
+        <Fill color="black" />
+
         {/* Rotating rounded rectangle */}
         <Group
           transform={[
