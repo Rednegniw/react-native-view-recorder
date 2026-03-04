@@ -2,6 +2,7 @@
 
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
+import { AudioDemo } from "./feature-card-demos/audio-demo";
 import { CaptureViewDemo } from "./feature-card-demos/capture-view-demo";
 import { FrameByFrameDemo } from "./feature-card-demos/frame-by-frame-demo";
 import { SkiaDemo } from "./feature-card-demos/skia-demo";
@@ -31,6 +32,11 @@ const features: Feature[] = [
     description:
       "Async onFrame callback lets you update content between each capture. Drive animations programmatically.",
   },
+  {
+    demo: <AudioDemo />,
+    title: "Supports Audio",
+    description: "Add your own audio file, or mix audio programmatically.",
+  },
 ];
 
 const container = {
@@ -59,7 +65,7 @@ const item = {
 export function FeatureCards() {
   return (
     <motion.div
-      className="not-prose grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl"
+      className="not-prose grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-4xl"
       variants={container}
       initial="hidden"
       whileInView="visible"
