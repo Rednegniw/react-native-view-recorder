@@ -21,14 +21,6 @@ describe("public API exports", () => {
     expect(lib.RecordingView).toBeDefined();
   });
 
-  test("exports useSkiaViewRecorder as a function", () => {
-    expect(typeof lib.useSkiaViewRecorder).toBe("function");
-  });
-
-  test("exports SkiaRecordingView", () => {
-    expect(lib.SkiaRecordingView).toBeDefined();
-  });
-
   test("type exports compile correctly", () => {
     const _frameInfo: FrameInfo<number> = { frameIndex: 0, totalFrames: 1 };
     const _recordProgress: RecordProgress<number> = {

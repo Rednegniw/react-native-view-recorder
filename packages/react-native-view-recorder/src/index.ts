@@ -8,4 +8,3 @@ export type {
   ViewRecorder,
 } from "./RecordingView";
 export { AbortError, RecordingView, useViewRecorder } from "./RecordingView";
-export { SkiaRecordingView, useSkiaViewRecorder } from "./SkiaRecordingView";
