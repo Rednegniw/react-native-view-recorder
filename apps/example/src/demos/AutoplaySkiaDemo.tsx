@@ -7,51 +7,45 @@ import {
   vec,
 } from "@shopify/react-native-skia";
 import { File, Paths } from "expo-file-system";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { View } from "react-native";
-import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
+import { useVideoPlayer, VideoView } from "expo-video";
+import { useCallback, useState } from "react";
+import { Text, View } from "react-native";
 import { SkiaRecordingView, useSkiaViewRecorder } from "react-native-view-recorder";
-import { RecIndicator } from "../components/RecIndicator";
-import { VideoOverview } from "../components/VideoOverview";
-import { colors } from "../theme/colors";
+import { RipplePressable } from "../components/RipplePressable";
 
 const FPS = 60;
 const DURATION_SECONDS = 3;
 const TOTAL_FRAMES = FPS * DURATION_SECONDS;
-const WIDTH = 640;
-const HEIGHT = 480;
+const OUTPUT_SIZE = 640;
 
-function hslToHex(h: number, s: number, l: number): string {
-  const sNorm = s / 100;
-  const lNorm = l / 100;
-  const a = sNorm * Math.min(lNorm, 1 - lNorm);
+function hsl(h: number, s: number, l: number): string {
+  const a = (s / 100) * Math.min(l / 100, 1 - l / 100);
   const f = (n: number) => {
     const k = (n + h / 30) % 12;
-    const color = lNorm - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-    return Math.round(255 * color)
+    return l / 100 - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+  };
+  const hex = (v: number) =>
+    Math.round(v * 255)
       .toString(16)
       .padStart(2, "0");
-  };
-  return `#${f(0)}${f(8)}${f(4)}`;
+  return `#${hex(f(0))}${hex(f(8))}${hex(f(4))}`;
 }
-
-type Phase = "recording" | "done";
 
 export const AutoplaySkiaDemo = () => {
   const recorder = useSkiaViewRecorder();
-  const mountedRef = useRef(true);
-  const recordingRef = useRef(false);
-
-  const [phase, setPhase] = useState<Phase>("recording");
+  const [recording, setRecording] = useState(false);
   const [videoUri, setVideoUri] = useState<string | null>(null);
   const [frameProgress, setFrameProgress] = useState(0);
-  const [canvasSize, setCanvasSize] = useState({ width: 1, height: 1 });
+  const [canvasSize, setCanvasSize] = useState(300);
 
-  const startRecording = useCallback(async () => {
-    if (recordingRef.current || !mountedRef.current) return;
-    recordingRef.current = true;
+  const player = useVideoPlayer(videoUri, (p) => {
+    p.loop = true;
+    p.play();
+  });
 
-    setPhase("recording");
+  const handleRecord = useCallback(async () => {
+    if (recording) return;
+    setRecording(true);
     setVideoUri(null);
     setFrameProgress(0);
 
@@ -63,170 +57,131 @@ export const AutoplaySkiaDemo = () => {
       const result = await recorder.record({
         output: outputPath,
         fps: FPS,
-        width: WIDTH,
-        height: HEIGHT,
+        width: OUTPUT_SIZE,
+        height: OUTPUT_SIZE,
         totalFrames: TOTAL_FRAMES,
-        optimizeForNetwork: true,
         onFrame: async ({ frameIndex, totalFrames }) => {
           setFrameProgress(frameIndex / (totalFrames ?? 1));
         },
       });
 
-      if (!mountedRef.current) return;
       setVideoUri(result);
-      setPhase("done");
-    } catch {
-      if (mountedRef.current) setPhase("recording");
     } finally {
-      recordingRef.current = false;
+      setRecording(false);
     }
-  }, [recorder]);
+  }, [recorder, recording]);
 
-  // Auto-start on mount
-  useEffect(() => {
-    mountedRef.current = true;
-    startRecording();
-    return () => {
-      mountedRef.current = false;
-    };
-  }, [startRecording]);
-
-  // Auto-restart after showing result
-  useEffect(() => {
-    if (phase !== "done") return;
-    const timeout = setTimeout(startRecording, 4000);
-    return () => clearTimeout(timeout);
-  }, [phase, startRecording]);
+  const angle = frameProgress * Math.PI * 4;
+  const hue = 200 + frameProgress * 160;
+  const s = canvasSize;
+  const cx = s / 2;
+  const cy = s / 2;
+  const rectSize = s * 0.3;
+  const halfRect = rectSize / 2;
+  const cornerR = rectSize * 0.16;
+  const orbitR = s * 0.33;
+  const ballR = s * 0.033;
 
   return (
     <View
       style={{
         flex: 1,
-        backgroundColor: colors.background,
+        backgroundColor: "#000",
+        padding: 20,
         justifyContent: "center",
-        alignItems: "center",
-        paddingHorizontal: 20,
       }}
     >
-      {/* Skia recording content */}
-      {phase !== "done" && (
-        <Animated.View
-          entering={FadeIn.duration(300)}
-          exiting={FadeOut.duration(300)}
-          style={{ width: "100%" }}
+      {/* REC indicator */}
+      {recording && (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 6,
+            marginBottom: 8,
+          }}
         >
-          <View style={{ marginBottom: 8 }}>
-            <RecIndicator />
-          </View>
+          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: "#FF3B30" }} />
+          <Text style={{ color: "#FF3B30", fontSize: 12, fontWeight: "700", letterSpacing: 1 }}>
+            REC
+          </Text>
+        </View>
+      )}
 
-          <View
-            style={{
-              borderRadius: 16,
-              overflow: "hidden",
-              borderWidth: 2,
-              borderColor: colors.recording,
-            }}
+      <View
+        style={{
+          borderRadius: 16,
+          overflow: "hidden",
+          borderWidth: recording ? 2 : 0,
+          borderColor: "#FF3B30",
+        }}
+      >
+        {!videoUri ? (
+          <SkiaRecordingView
+            viewRef={recorder.viewRef}
+            sessionId={recorder.sessionId}
+            style={{ width: "100%", aspectRatio: 1 }}
+            pointerEvents="none"
+            onLayout={(e) => setCanvasSize(e.nativeEvent.layout.width)}
           >
-            <SkiaRecordingView
-              viewRef={recorder.viewRef}
-              sessionId={recorder.sessionId}
-              style={{ width: "100%", aspectRatio: WIDTH / HEIGHT }}
-              pointerEvents="none"
-            >
-              <SkiaContent
-                progress={frameProgress}
-                canvasWidth={canvasSize.width}
-                canvasHeight={canvasSize.height}
-                onCanvasLayout={setCanvasSize}
-              />
-            </SkiaRecordingView>
-          </View>
-        </Animated.View>
-      )}
+            <Canvas style={{ flex: 1 }}>
+              {/* Rotating rounded rectangle with gradient */}
+              <Group
+                transform={[
+                  { translateX: cx },
+                  { translateY: cy },
+                  { rotate: angle },
+                  { translateX: -halfRect },
+                  { translateY: -halfRect },
+                ]}
+              >
+                <RoundedRect x={0} y={0} width={rectSize} height={rectSize} r={cornerR}>
+                  <LinearGradient
+                    start={vec(0, 0)}
+                    end={vec(rectSize, rectSize)}
+                    colors={[hsl(hue, 70, 60), hsl(hue + 60, 80, 50)]}
+                  />
+                </RoundedRect>
+              </Group>
 
-      {/* Video result */}
-      {videoUri && phase === "done" && (
-        <Animated.View entering={FadeIn.duration(300)} style={{ width: "100%" }}>
-          <VideoOverview
-            uri={videoUri}
-            width={WIDTH}
-            height={HEIGHT}
-            fps={FPS}
-            codec="hevc"
-            totalFrames={TOTAL_FRAMES}
+              {/* Orbiting circles */}
+              {Array.from({ length: 5 }).map((_, i) => {
+                const a = -angle + (i * Math.PI * 2) / 5;
+                return (
+                  <Circle
+                    key={i}
+                    cx={cx + Math.cos(a) * orbitR}
+                    cy={cy + Math.sin(a) * orbitR}
+                    r={ballR}
+                    color={hsl((hue + i * 40) % 360, 80, 65)}
+                  />
+                );
+              })}
+            </Canvas>
+          </SkiaRecordingView>
+        ) : (
+          <VideoView
+            player={player}
+            style={{ width: "100%", aspectRatio: 1 }}
+            nativeControls={false}
           />
-        </Animated.View>
-      )}
+        )}
+      </View>
+
+      <RipplePressable
+        onPress={handleRecord}
+        style={{
+          marginTop: 16,
+          backgroundColor: "#1a1a1a",
+          paddingVertical: 12,
+          borderRadius: 10,
+          alignItems: "center",
+        }}
+      >
+        <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>
+          {recording ? "Recording..." : "Record"}
+        </Text>
+      </RipplePressable>
     </View>
   );
 };
-
-function SkiaContent({
-  progress,
-  canvasWidth,
-  canvasHeight,
-  onCanvasLayout,
-}: {
-  progress: number;
-  canvasWidth: number;
-  canvasHeight: number;
-  onCanvasLayout: (size: { width: number; height: number }) => void;
-}) {
-  const cx = canvasWidth / 2;
-  const cy = canvasHeight / 2;
-  const scale = Math.min(canvasWidth / WIDTH, canvasHeight / HEIGHT);
-  const angle = progress * Math.PI * 4;
-  const hue = 200 + progress * 160;
-
-  const rectSize = 160 * scale;
-  const halfRect = rectSize / 2;
-  const orbitRadius = 150 * scale;
-  const circleRadius = 14 * scale;
-  const cornerRadius = 24 * scale;
-  const numCircles = 5;
-
-  return (
-    <View
-      style={{ width: "100%", aspectRatio: WIDTH / HEIGHT }}
-      onLayout={(e) =>
-        onCanvasLayout({
-          width: e.nativeEvent.layout.width,
-          height: e.nativeEvent.layout.height,
-        })
-      }
-    >
-      <Canvas style={{ width: "100%", height: "100%" }}>
-        {/* Rotating rounded rectangle */}
-        <Group
-          transform={[
-            { translateX: cx },
-            { translateY: cy },
-            { rotate: angle },
-            { translateX: -halfRect },
-            { translateY: -halfRect },
-          ]}
-        >
-          <RoundedRect x={0} y={0} width={rectSize} height={rectSize} r={cornerRadius}>
-            <LinearGradient
-              start={vec(0, 0)}
-              end={vec(rectSize, rectSize)}
-              colors={[hslToHex(hue, 70, 60), hslToHex(hue + 60, 80, 50)]}
-            />
-          </RoundedRect>
-        </Group>
-
-        {/* Orbiting circles */}
-        {Array.from({ length: numCircles }).map((_, i) => {
-          const circleAngle = -angle + (i * Math.PI * 2) / numCircles;
-          const x = cx + Math.cos(circleAngle) * orbitRadius;
-          const y = cy + Math.sin(circleAngle) * orbitRadius;
-          const circleHue = (hue + i * 40) % 360;
-
-          return (
-            <Circle key={i} cx={x} cy={y} r={circleRadius} color={hslToHex(circleHue, 80, 65)} />
-          );
-        })}
-      </Canvas>
-    </View>
-  );
-}
