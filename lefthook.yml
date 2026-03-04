@@ -8,3 +8,10 @@ pre-commit:
     - name: typecheck
       glob: "*.{ts,tsx}"
       run: bun run lib check-types
+    - name: clang-format
+      glob: "*.{m,mm,h,cpp}"
+      run: clang-format -i {staged_files}
+      stage_fixed: true
+    - name: swiftlint
+      glob: "*.swift"
+      run: swiftlint lint --strict --config .swiftlint.yml {staged_files}
