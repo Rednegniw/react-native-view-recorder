@@ -1,4 +1,4 @@
 {
   "title": "Guides",
-  "pages": ["how-it-works", "skia", "codec-selection", "performance"]
+  "pages": ["how-it-works", "skia", "codec-selection", "performance", "troubleshooting"]
 }

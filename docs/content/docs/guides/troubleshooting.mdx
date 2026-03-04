@@ -1,0 +1,30 @@
+---
+title: Troubleshooting
+description: Common issues and how to resolve them
+full: true
+---
+
+## iOS Simulator: noisy console logs when sharing videos
+
+When you open `UIActivityViewController` (the share sheet) with a recorded `.mp4` on the **iOS Simulator**, you'll see a wall of system framework logs like these:
+
+```
+[Sharing] Failed to request default share mode for fileURL:...
+[Sharing] Only support loading options for CKShare and SWY types.
+[Sharing] error fetching item for URL:... : (null)
+[Sharing] error fetching file provider domain for URL:... : (null)
+[MediaToolbox] <<<< VRP >>>> signalled err=-12852 at <>:2548
+[VideoToolbox] (Fig) signalled err=-12900 at <>:1233
+```
+
+**These are not from the library.** They come from Apple's system frameworks (`Sharing`, `MediaToolbox`, `VideoToolbox`) and only appear on the Simulator because it lacks full Launch Services and hardware VideoToolbox support. The share sheet can't generate video thumbnails or find registered apps to handle `.mp4` files in the simulated environment.
+
+On a **real device**, these logs do not appear.
+
+### What you can do
+
+**Xcode 15+**: Right-click one of the offending log lines in the console, choose **"Hide Similar Items"**. The filter persists across runs, so you only need to do this once per log pattern.
+
+**Xcode 14 and earlier**: Type a negative filter in the console filter bar (e.g., exclude `[Sharing]` or `[MediaToolbox]`) to hide matching lines.
+
+These logs are annoying and noisy, but I am not aware of any way to disable them on the Simulator.
