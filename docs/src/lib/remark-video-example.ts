@@ -11,13 +11,19 @@ function transformNode(node: Code) {
   const params = parseParams(node.meta ?? undefined);
   const encodedCode = encodeURIComponent(node.value);
 
+  const attributes = [
+    { type: "mdxJsxAttribute", name: "code", value: encodedCode },
+    { type: "mdxJsxAttribute", name: "src", value: params.video },
+  ];
+
+  if ("audio" in params) {
+    attributes.push({ type: "mdxJsxAttribute", name: "hasAudio", value: "true" });
+  }
+
   const jsxNode = {
     type: "mdxJsxFlowElement",
     name: "VideoExample",
-    attributes: [
-      { type: "mdxJsxAttribute", name: "code", value: encodedCode },
-      { type: "mdxJsxAttribute", name: "src", value: params.video },
-    ],
+    attributes,
     children: [],
   };
 
