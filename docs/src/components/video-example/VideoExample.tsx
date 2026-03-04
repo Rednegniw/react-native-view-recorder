@@ -13,8 +13,9 @@ const VideoExampleContent = dynamic(
 interface VideoExampleProps {
   code: string;
   src: string;
+  hasAudio?: string;
 }
 
-export function VideoExample({ code, src }: VideoExampleProps) {
-  return <VideoExampleContent code={code} src={src} />;
+export function VideoExample({ code, src, hasAudio }: VideoExampleProps) {
+  return <VideoExampleContent code={code} src={src} hasAudio={hasAudio === "true"} />;
 }
