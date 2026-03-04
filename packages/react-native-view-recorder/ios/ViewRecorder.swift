@@ -312,12 +312,10 @@ public final class ViewRecorder: RCTEventEmitter {
     sessions.removeAll()
     sessionsLock.unlock()
 
-    for (_, session) in allSessions {
-      if session.writer.status == .writing {
-        session.input.markAsFinished()
-        session.audioInput?.markAsFinished()
-        session.writer.cancelWriting()
-      }
+    for (_, session) in allSessions where session.writer.status == .writing {
+      session.input.markAsFinished()
+      session.audioInput?.markAsFinished()
+      session.writer.cancelWriting()
     }
 
     super.invalidate()
@@ -482,7 +480,7 @@ public final class ViewRecorder: RCTEventEmitter {
     )
 
     // Audio input (optional, used by mixAudio / audioFile)
-    var audioWriterInput: AVAssetWriterInput? = nil
+    var audioWriterInput: AVAssetWriterInput?
     let wantMixAudio = (options["hasMixAudio"] as? NSNumber)?.boolValue ?? false
     let audioFilePath = options["audioFilePath"] as? String
     let audioFileStartTime = (options["audioFileStartTime"] as? NSNumber)?.doubleValue ?? 0
