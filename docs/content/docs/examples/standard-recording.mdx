@@ -11,20 +11,41 @@ import { useState, useCallback } from "react";
 import { Text, View, Pressable } from "react-native";
 import { File, Paths } from "expo-file-system";
 import { LinearGradient } from "expo-linear-gradient";
+import { useVideoPlayer, VideoView } from "expo-video";
 import { RecordingView, useViewRecorder } from "react-native-view-recorder";
 
 const FPS = 60;
 const DURATION = 5;
 const TOTAL_FRAMES = FPS * DURATION;
 
+function hsl(h: number, s: number, l: number) {
+  const a = (s / 100) * Math.min(l / 100, 1 - l / 100);
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    return l / 100 - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+  };
+  const hex = (v: number) =>
+    Math.round(v * 255)
+      .toString(16)
+      .padStart(2, "0");
+  return `#${hex(f(0))}${hex(f(8))}${hex(f(4))}`;
+}
+
 export default function CountdownRecording() {
   const recorder = useViewRecorder();
   const [second, setSecond] = useState(1);
   const [recording, setRecording] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [videoUri, setVideoUri] = useState<string | null>(null);
+
+  const player = useVideoPlayer(videoUri, (p) => {
+    p.loop = true;
+    p.play();
+  });
 
   const handleRecord = useCallback(async () => {
     setRecording(true);
+    setVideoUri(null);
 
     const output = new File(Paths.cache, "countdown.mp4");
     if (output.exists) output.delete();
@@ -44,12 +65,21 @@ export default function CountdownRecording() {
     });
 
     setRecording(false);
-    console.log("Saved to:", uri);
+    setVideoUri(uri);
   }, [recorder]);
 
+  const hue = 200 + ((second - 1) / DURATION) * 120;
+
   return (
-    <View style={{ flex: 1, backgroundColor: "#000", padding: 20 }}>
-      {/* REC indicator (outside RecordingView so it won't appear in the video) */}
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: "#000",
+        padding: 20,
+        justifyContent: "center",
+      }}
+    >
+      {/* REC indicator */}
       {recording && (
         <View
           style={{
@@ -88,45 +118,62 @@ export default function CountdownRecording() {
           borderColor: "#FF3B30",
         }}
       >
-        <RecordingView
-          sessionId={recorder.sessionId}
-          style={{ width: "100%", aspectRatio: 640 / 480 }}
-        >
-          <LinearGradient
-            colors={["#4A90D9", "#6B5CE7"]}
-            style={{
-              flex: 1,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
+        {/* RecordingView wraps the content to capture */}
+        {!videoUri ? (
+          <RecordingView
+            sessionId={recorder.sessionId}
+            style={{ width: "100%", aspectRatio: 640 / 480 }}
           >
-            <Text
+            <LinearGradient
+              colors={[hsl(hue, 40, 72), hsl(hue + 40, 45, 62)]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
               style={{
-                color: "#fff",
-                fontSize: 120,
-                fontWeight: "800",
+                flex: 1,
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
-              {second}
-            </Text>
-            <Text
-              style={{
-                color: "rgba(255,255,255,0.5)",
-                fontSize: 28,
-              }}
-            >
-              / {DURATION}
-            </Text>
-          </LinearGradient>
-        </RecordingView>
+              <Text
+                style={{
+                  color: "#fff",
+                  fontSize: 120,
+                  fontWeight: "800",
+                }}
+              >
+                {second}
+              </Text>
+              <Text
+                style={{
+                  color: "rgba(255,255,255,0.5)",
+                  fontSize: 28,
+                }}
+              >
+                / {DURATION}
+              </Text>
+            </LinearGradient>
+          </RecordingView>
+        ) : (
+          <VideoView
+            player={player}
+            style={{ width: "100%", aspectRatio: 640 / 480 }}
+            nativeControls={false}
+          />
+        )}
       </View>
 
       <Pressable
         onPress={handleRecord}
         disabled={recording}
-        style={{ marginTop: 16 }}
+        style={{
+          marginTop: 16,
+          backgroundColor: "#1a1a1a",
+          paddingVertical: 12,
+          borderRadius: 10,
+          alignItems: "center",
+        }}
       >
-        <Text style={{ color: "#fff", fontSize: 16 }}>
+        <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>
           {recording ? `Recording... ${progress}%` : "Record"}
         </Text>
       </Pressable>
