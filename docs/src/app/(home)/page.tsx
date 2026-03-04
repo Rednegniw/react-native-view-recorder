@@ -67,7 +67,7 @@ export default function HomePage() {
           </div>
           <div className="rounded-lg border border-fd-border p-4">
             <p className="font-medium text-fd-foreground mb-1">Tiny footprint</p>
-            <p>~60 KB native code, zero third-party binaries</p>
+            <p>~90 KB native code, zero third-party binaries</p>
           </div>
         </div>
 
