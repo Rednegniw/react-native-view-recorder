@@ -10,6 +10,7 @@ Use `useSkiaViewRecorder` and `SkiaRecordingView` to capture Skia canvases. On i
 import { useState, useCallback } from "react";
 import { View, Pressable, Text } from "react-native";
 import { File, Paths } from "expo-file-system";
+import { useVideoPlayer, VideoView } from "expo-video";
 import {
   Canvas,
   Circle,
@@ -26,7 +27,7 @@ import {
 const FPS = 60;
 const DURATION = 3;
 const TOTAL_FRAMES = FPS * DURATION;
-const SIZE = 300;
+const OUTPUT_SIZE = 640;
 
 function hsl(h: number, s: number, l: number) {
   const a = (s / 100) * Math.min(l / 100, 1 - l / 100);
@@ -45,77 +46,169 @@ export default function SkiaRecording() {
   const recorder = useSkiaViewRecorder();
   const [progress, setProgress] = useState(0);
   const [recording, setRecording] = useState(false);
+  const [videoUri, setVideoUri] = useState<string | null>(null);
+  const [canvasSize, setCanvasSize] = useState(300);
+
+  const player = useVideoPlayer(videoUri, (p) => {
+    p.loop = true;
+    p.play();
+  });
 
   const handleRecord = useCallback(async () => {
     setRecording(true);
+    setVideoUri(null);
 
     const output = new File(Paths.cache, "skia.mp4");
     if (output.exists) output.delete();
 
-    await recorder.record({
+    const uri = await recorder.record({
       output: output.uri.replace("file://", ""),
       fps: FPS,
       totalFrames: TOTAL_FRAMES,
-      width: 640,
-      height: 480,
+      width: OUTPUT_SIZE,
+      height: OUTPUT_SIZE,
       onFrame: async ({ frameIndex, totalFrames }) => {
         setProgress(frameIndex / totalFrames);
       },
     });
 
     setRecording(false);
+    setVideoUri(uri);
   }, [recorder]);
 
   const angle = progress * Math.PI * 4;
   const hue = 200 + progress * 160;
-  const cx = SIZE / 2;
-  const cy = SIZE / 2;
+  const s = canvasSize;
+  const cx = s / 2;
+  const cy = s / 2;
+  const rectSize = s * 0.3;
+  const halfRect = rectSize / 2;
+  const cornerR = rectSize * 0.16;
+  const orbitR = s * 0.33;
+  const ballR = s * 0.033;
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#000" }}>
-      <SkiaRecordingView
-        viewRef={recorder.viewRef}
-        sessionId={recorder.sessionId}
-        style={{ width: SIZE, height: SIZE }}
-      >
-        <Canvas style={{ flex: 1 }}>
-          {/* Rotating rounded rectangle with gradient */}
-          <Group
-            transform={[
-              { translateX: cx },
-              { translateY: cy },
-              { rotate: angle },
-              { translateX: -50 },
-              { translateY: -50 },
-            ]}
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: "#000",
+        padding: 20,
+        justifyContent: "center",
+      }}
+    >
+      {/* REC indicator */}
+      {recording && (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 6,
+            marginBottom: 8,
+          }}
+        >
+          <View
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              backgroundColor: "#FF3B30",
+            }}
+          />
+          <Text
+            style={{
+              color: "#FF3B30",
+              fontSize: 12,
+              fontWeight: "700",
+              letterSpacing: 1,
+            }}
           >
-            <RoundedRect x={0} y={0} width={100} height={100} r={16}>
-              <LinearGradient
-                start={vec(0, 0)}
-                end={vec(100, 100)}
-                colors={[hsl(hue, 70, 60), hsl(hue + 60, 80, 50)]}
-              />
-            </RoundedRect>
-          </Group>
+            REC
+          </Text>
+        </View>
+      )}
 
-          {/* Orbiting circles */}
-          {Array.from({ length: 5 }).map((_, i) => {
-            const a = -angle + (i * Math.PI * 2) / 5;
-            return (
-              <Circle
-                key={i}
-                cx={cx + Math.cos(a) * 120}
-                cy={cy + Math.sin(a) * 120}
-                r={10}
-                color={hsl((hue + i * 40) % 360, 80, 65)}
-              />
-            );
-          })}
-        </Canvas>
-      </SkiaRecordingView>
+      <View
+        style={{
+          borderRadius: 16,
+          overflow: "hidden",
+          borderWidth: recording ? 2 : 0,
+          borderColor: "#FF3B30",
+        }}
+      >
+        {!videoUri ? (
+          <SkiaRecordingView
+            viewRef={recorder.viewRef}
+            sessionId={recorder.sessionId}
+            style={{ width: "100%", aspectRatio: 1 }}
+            onLayout={(e) =>
+              setCanvasSize(e.nativeEvent.layout.width)
+            }
+          >
+            <Canvas style={{ flex: 1 }}>
+              {/* Rotating rounded rectangle with gradient */}
+              <Group
+                transform={[
+                  { translateX: cx },
+                  { translateY: cy },
+                  { rotate: angle },
+                  { translateX: -halfRect },
+                  { translateY: -halfRect },
+                ]}
+              >
+                <RoundedRect
+                  x={0}
+                  y={0}
+                  width={rectSize}
+                  height={rectSize}
+                  r={cornerR}
+                >
+                  <LinearGradient
+                    start={vec(0, 0)}
+                    end={vec(rectSize, rectSize)}
+                    colors={[
+                      hsl(hue, 70, 60),
+                      hsl(hue + 60, 80, 50),
+                    ]}
+                  />
+                </RoundedRect>
+              </Group>
 
-      <Pressable onPress={handleRecord} disabled={recording}>
-        <Text style={{ color: "#fff" }}>
+              {/* Orbiting circles */}
+              {Array.from({ length: 5 }).map((_, i) => {
+                const a = -angle + (i * Math.PI * 2) / 5;
+                return (
+                  <Circle
+                    key={i}
+                    cx={cx + Math.cos(a) * orbitR}
+                    cy={cy + Math.sin(a) * orbitR}
+                    r={ballR}
+                    color={hsl((hue + i * 40) % 360, 80, 65)}
+                  />
+                );
+              })}
+            </Canvas>
+          </SkiaRecordingView>
+        ) : (
+          <VideoView
+            player={player}
+            style={{ width: "100%", aspectRatio: 1 }}
+            nativeControls={false}
+          />
+        )}
+      </View>
+
+      <Pressable
+        onPress={handleRecord}
+        disabled={recording}
+        style={{
+          marginTop: 16,
+          backgroundColor: "#1a1a1a",
+          paddingVertical: 12,
+          borderRadius: 10,
+          alignItems: "center",
+        }}
+      >
+        <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>
           {recording ? "Recording..." : "Record"}
         </Text>
       </Pressable>

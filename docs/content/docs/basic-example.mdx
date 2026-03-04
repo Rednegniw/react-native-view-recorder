@@ -4,63 +4,47 @@ description: Record your first view to MP4 in under 5 minutes
 full: true
 ---
 
-<Steps>
-<Step>
-### Import the hook and component
+Wrap any content in a `<RecordingView>` and link it to a recorder session via `useViewRecorder`. When you call `record()`, the library calls your `onFrame` callback for each frame, waits for React to re-render, captures the native view, and encodes it to H.264 video.
 
-```tsx
-import { RecordingView, useViewRecorder } from "react-native-view-recorder";
-```
-</Step>
-<Step>
-### Set up the recorder
+Here is a basic example that records a 5-second video of an animated frame counter. The resulting video is saved to the app's cache directory as `video.mp4`.
 
-```tsx
+<div className="md:mt-8" />
+
+```tsx title="App.tsx"
 import { useState } from "react";
-import { Button, View } from "react-native";
+import { Button, Text, View } from "react-native";
 import * as FileSystem from "expo-file-system";
 import { RecordingView, useViewRecorder } from "react-native-view-recorder";
 
-function App() {
+export default function App() {
   const recorder = useViewRecorder();
   const [frame, setFrame] = useState(0);
 
   const handleRecord = async () => {
-    const videoUri = await recorder.record({
+    await recorder.record({
       output: FileSystem.cacheDirectory + "video.mp4",
       fps: 30,
       totalFrames: 150,
       onFrame: async ({ frameIndex }) => setFrame(frameIndex),
-      onProgress: ({ framesEncoded, totalFrames }) => {
-        console.log(`${framesEncoded}/${totalFrames}`);
-      },
     });
   };
 
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-      {/* Link the RecordingView to the recorder session */}
       <RecordingView
         sessionId={recorder.sessionId}
-        style={{ width: 640, height: 480 }}
+        style={{ width: 300, height: 200, backgroundColor: "#111" }}
       >
-        <MyContent frame={frame} />
+        <Text style={{ color: "#fff", fontSize: 48 }}>{frame}</Text>
       </RecordingView>
 
-      {/* Trigger recording */}
-      <Button title="Record" onPress={handleRecord} />
+      <Button title="Record 5s" onPress={handleRecord} />
     </View>
   );
 }
 ```
-</Step>
-<Step>
-### Understand the flow
 
-1. `useViewRecorder()` creates a session and returns a `sessionId` and `record` function
-2. Pass `sessionId` to `<RecordingView>` to link the view to the recorder
-3. Call `recorder.record()` with your options
-4. For each frame, the library calls your `onFrame` callback, waits for React to re-render, captures the native view, and encodes it
-5. When all frames are captured, the promise resolves with the output file path
-</Step>
-</Steps>
+## Next steps
+
+- [RecordOptions](/docs/api/record-options) for all available options (encoding, audio, callbacks)
+- [SkiaRecordingView](/docs/api/skia-recording-view) to record Skia canvases
