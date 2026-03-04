@@ -32,7 +32,6 @@ import kotlin.math.pow
 class ViewRecorderModule(
   reactContext: ReactApplicationContext,
 ) : NativeViewRecorderSpec(reactContext) {
-
   companion object {
     const val NAME = "ViewRecorder"
     private const val TAG = "ViewRecorder"
@@ -146,18 +145,38 @@ class ViewRecorderModule(
         File(output).delete()
 
         val wantMixAudio = options.hasKey("hasMixAudio") && options.getBoolean("hasMixAudio")
-        val audioFilePath = if (options.hasKey("audioFilePath") && !options.isNull("audioFilePath"))
-          options.getString("audioFilePath") else null
-        val audioFileStartTime = if (options.hasKey("audioFileStartTime") && !options.isNull("audioFileStartTime"))
-          options.getDouble("audioFileStartTime") else 0.0
+        val audioFilePath =
+          if (options.hasKey("audioFilePath") && !options.isNull("audioFilePath")) {
+            options.getString("audioFilePath")
+          } else {
+            null
+          }
+        val audioFileStartTime =
+          if (options.hasKey("audioFileStartTime") && !options.isNull("audioFileStartTime")) {
+            options.getDouble("audioFileStartTime")
+          } else {
+            0.0
+          }
         val hasAnyAudio = wantMixAudio || audioFilePath != null
 
-        val audioSampleRate = if (options.hasKey("audioSampleRate") && !options.isNull("audioSampleRate"))
-          options.getInt("audioSampleRate") else 44100
-        val audioChannels = if (options.hasKey("audioChannels") && !options.isNull("audioChannels"))
-          options.getInt("audioChannels") else 1
-        val audioBitrate = if (options.hasKey("audioBitrate") && !options.isNull("audioBitrate"))
-          options.getInt("audioBitrate") else 128000
+        val audioSampleRate =
+          if (options.hasKey("audioSampleRate") && !options.isNull("audioSampleRate")) {
+            options.getInt("audioSampleRate")
+          } else {
+            44100
+          }
+        val audioChannels =
+          if (options.hasKey("audioChannels") && !options.isNull("audioChannels")) {
+            options.getInt("audioChannels")
+          } else {
+            1
+          }
+        val audioBitrate =
+          if (options.hasKey("audioBitrate") && !options.isNull("audioBitrate")) {
+            options.getInt("audioBitrate")
+          } else {
+            128000
+          }
 
         Log.d(TAG, "Starting session $sessionId: ${width}x$height @ ${fps}fps, codec=$codecMime")
 
@@ -172,18 +191,26 @@ class ViewRecorderModule(
 
         val muxerState = MuxerState(muxer!!, expectedTrackCount = if (hasAnyAudio) 2 else 1)
 
-        val videoFormat = MediaFormat.createVideoFormat(codecMime, width, height).apply {
-          setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface)
-          setInteger(MediaFormat.KEY_BIT_RATE, bitrate)
-          setInteger(MediaFormat.KEY_FRAME_RATE, fps)
-          setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, keyFrameInterval)
-        }
+        val videoFormat =
+          MediaFormat.createVideoFormat(codecMime, width, height).apply {
+            setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface)
+            setInteger(MediaFormat.KEY_BIT_RATE, bitrate)
+            setInteger(MediaFormat.KEY_FRAME_RATE, fps)
+            setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, keyFrameInterval)
+          }
 
         encoder!!.setCallback(
           object : MediaCodec.Callback() {
-            override fun onInputBufferAvailable(codec: MediaCodec, index: Int) {}
+            override fun onInputBufferAvailable(
+              codec: MediaCodec,
+              index: Int,
+            ) {}
 
-            override fun onOutputBufferAvailable(codec: MediaCodec, index: Int, info: MediaCodec.BufferInfo) {
+            override fun onOutputBufferAvailable(
+              codec: MediaCodec,
+              index: Int,
+              info: MediaCodec.BufferInfo,
+            ) {
               if (info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) {
                 codec.releaseOutputBuffer(index, false)
                 return
@@ -201,12 +228,18 @@ class ViewRecorderModule(
               }
             }
 
-            override fun onOutputFormatChanged(codec: MediaCodec, format: MediaFormat) {
+            override fun onOutputFormatChanged(
+              codec: MediaCodec,
+              format: MediaFormat,
+            ) {
               muxerState.registerTrack(format, isAudio = false)
               if (muxerState.started) Log.d(TAG, "Muxer started for session $sessionId")
             }
 
-            override fun onError(codec: MediaCodec, e: MediaCodec.CodecException) {
+            override fun onError(
+              codec: MediaCodec,
+              e: MediaCodec.CodecException,
+            ) {
               Log.e(TAG, "MediaCodec error in session $sessionId", e)
               codecError = e
               eosLatch.countDown()
@@ -222,58 +255,62 @@ class ViewRecorderModule(
         eglThread = HandlerThread("ViewRecorder-EGL-$sessionId").also { it.start() }
         val eglHandler = Handler(eglThread!!.looper)
 
-        egl = suspendCancellableCoroutine { cont ->
-          eglHandler.post {
-            val wrapper = EglWrapper(inputSurface!!, width, height)
-            cont.resume(wrapper)
+        egl =
+          suspendCancellableCoroutine { cont ->
+            eglHandler.post {
+              val wrapper = EglWrapper(inputSurface!!, width, height)
+              cont.resume(wrapper)
+            }
           }
-        }
 
         bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
 
         // Audio encoder for mixAudio/audioFile: synchronous mode (no setCallback).
         if (hasAnyAudio) {
-          val audioFormat = MediaFormat.createAudioFormat(
-            MediaFormat.MIMETYPE_AUDIO_AAC, audioSampleRate, audioChannels,
-          ).apply {
-            setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC)
-            setInteger(MediaFormat.KEY_BIT_RATE, audioBitrate)
-          }
+          val audioFormat =
+            MediaFormat
+              .createAudioFormat(
+                MediaFormat.MIMETYPE_AUDIO_AAC,
+                audioSampleRate,
+                audioChannels,
+              ).apply {
+                setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC)
+                setInteger(MediaFormat.KEY_BIT_RATE, audioBitrate)
+              }
 
           audioEncoderInst = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_AUDIO_AAC)
           audioEncoderInst!!.configure(audioFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
           audioEncoderInst!!.start()
         }
 
-        val session = EncoderSession(
-          sessionId = sessionId,
-          encoder = encoder!!,
-          muxer = muxer!!,
-          egl = egl!!,
-          inputSurface = inputSurface!!,
-          eglThread = eglThread!!,
-          eglHandler = eglHandler,
-          callbackThread = callbackThread!!,
-          bitmap = bitmap!!,
-          eosLatch = eosLatch,
-          codecErrorRef = { codecError },
-          output = output,
-          fps = fps,
-          width = width,
-          height = height,
-          audioEncoder = audioEncoderInst,
-          muxerState = muxerState,
-          audioFilePath = audioFilePath,
-          audioFileStartTime = audioFileStartTime,
-          audioSampleRate = audioSampleRate,
-          audioChannels = audioChannels,
-        )
+        val session =
+          EncoderSession(
+            sessionId = sessionId,
+            encoder = encoder!!,
+            muxer = muxer!!,
+            egl = egl!!,
+            inputSurface = inputSurface!!,
+            eglThread = eglThread!!,
+            eglHandler = eglHandler,
+            callbackThread = callbackThread!!,
+            bitmap = bitmap!!,
+            eosLatch = eosLatch,
+            codecErrorRef = { codecError },
+            output = output,
+            fps = fps,
+            width = width,
+            height = height,
+            audioEncoder = audioEncoderInst,
+            muxerState = muxerState,
+            audioFilePath = audioFilePath,
+            audioFileStartTime = audioFileStartTime,
+            audioSampleRate = audioSampleRate,
+            audioChannels = audioChannels,
+          )
 
         sessions[sessionId] = session
 
-        /**
-         * Start audio file muxing concurrently with video frame capture.
-         */
+        // Start audio file muxing concurrently with video frame capture.
         if (audioFilePath != null) {
           scope.launch {
             try {
@@ -339,12 +376,13 @@ class ViewRecorderModule(
       val location = IntArray(2)
       view.getLocationInWindow(location)
 
-      val rect = Rect(
-        maxOf(0, location[0]),
-        maxOf(0, location[1]),
-        minOf(activity.window.decorView.width, location[0] + view.width),
-        minOf(activity.window.decorView.height, location[1] + view.height),
-      )
+      val rect =
+        Rect(
+          maxOf(0, location[0]),
+          maxOf(0, location[1]),
+          minOf(activity.window.decorView.width, location[0] + view.width),
+          minOf(activity.window.decorView.height, location[1] + view.height),
+        )
 
       if (rect.width() <= 0 || rect.height() <= 0) {
         promise.reject("VIEW_NOT_VISIBLE", "RecordingView has no visible area to capture")
@@ -352,7 +390,9 @@ class ViewRecorderModule(
       }
 
       PixelCopy.request(
-        activity.window, rect, session.bitmap,
+        activity.window,
+        rect,
+        session.bitmap,
         { result ->
           if (result != PixelCopy.SUCCESS) {
             promise.reject("PIXEL_COPY_FAILED", "PixelCopy failed with result: $result")
@@ -413,13 +453,18 @@ class ViewRecorderModule(
           location[1] + view.height <= activity.window.decorView.height
 
       if (fitsInWindow) {
-        val rect = Rect(
-          location[0], location[1],
-          location[0] + view.width, location[1] + view.height,
-        )
+        val rect =
+          Rect(
+            location[0],
+            location[1],
+            location[0] + view.width,
+            location[1] + view.height,
+          )
 
         PixelCopy.request(
-          activity.window, rect, session.bitmap,
+          activity.window,
+          rect,
+          session.bitmap,
           { result ->
             if (result != PixelCopy.SUCCESS) {
               promise.reject("PIXEL_COPY_FAILED", "PixelCopy failed with result: $result")
@@ -565,7 +610,10 @@ class ViewRecorderModule(
     var trackIndex = -1
     for (i in 0 until extractor.trackCount) {
       val mime = extractor.getTrackFormat(i).getString(MediaFormat.KEY_MIME) ?: continue
-      if (mime.startsWith("audio/")) { trackIndex = i; break }
+      if (mime.startsWith("audio/")) {
+        trackIndex = i
+        break
+      }
     }
     if (trackIndex < 0) {
       Log.w(TAG, "No audio track found in: $filePath")
@@ -615,7 +663,10 @@ class ViewRecorderModule(
         var offset = 0
         while (offset < sampleSize && !session.audioStopped) {
           val encIdx = audioEncoder.dequeueInputBuffer(5_000)
-          if (encIdx < 0) { session.drainAudioOutput(); continue }
+          if (encIdx < 0) {
+            session.drainAudioOutput()
+            continue
+          }
 
           val encBuf = audioEncoder.getInputBuffer(encIdx)!!
           encBuf.clear()
@@ -661,9 +712,11 @@ class ViewRecorderModule(
     }
 
     val rawBytes = android.util.Base64.decode(samplesBase64, android.util.Base64.NO_WRAP)
-    val floatBuffer = java.nio.ByteBuffer.wrap(rawBytes)
-      .order(java.nio.ByteOrder.LITTLE_ENDIAN)
-      .asFloatBuffer()
+    val floatBuffer =
+      java.nio.ByteBuffer
+        .wrap(rawBytes)
+        .order(java.nio.ByteOrder.LITTLE_ENDIAN)
+        .asFloatBuffer()
     val sampleCount = rawBytes.size / 4
 
     if (sampleCount == 0) {
@@ -717,10 +770,14 @@ private class MuxerState(
     private set
   var audioTrackIndex = -1
     private set
+
   @Volatile var started = false
     private set
 
-  fun registerTrack(format: MediaFormat, isAudio: Boolean) {
+  fun registerTrack(
+    format: MediaFormat,
+    isAudio: Boolean,
+  ) {
     synchronized(lock) {
       if (started) return
       val idx = muxer.addTrack(format)
@@ -737,7 +794,11 @@ private class MuxerState(
     }
   }
 
-  fun writeOrBuffer(buf: ByteBuffer, info: MediaCodec.BufferInfo, isAudio: Boolean) {
+  fun writeOrBuffer(
+    buf: ByteBuffer,
+    info: MediaCodec.BufferInfo,
+    isAudio: Boolean,
+  ) {
     synchronized(lock) {
       val trackIdx = if (isAudio) audioTrackIndex else videoTrackIndex
       if (started && trackIdx >= 0) {
@@ -760,7 +821,10 @@ private class MuxerState(
 
 // ── Drain audio encoder (synchronous mode) ────────────────────────
 
-private fun drainAudioEncoder(encoder: MediaCodec, muxerState: MuxerState) {
+private fun drainAudioEncoder(
+  encoder: MediaCodec,
+  muxerState: MuxerState,
+) {
   val info = MediaCodec.BufferInfo()
 
   while (true) {
@@ -813,10 +877,13 @@ private class EncoderSession(
   val audioChannels: Int = 1,
 ) {
   val deltaUs = 1_000_000L / fps
+
   @Volatile var ptsUs = 0L
 
   @Volatile var frameIndex = 0L
+
   @Volatile var audioStopped = false
+
   @Volatile var audioFileMaxDurationUs: Long = -1
   val audioFileLatch = CountDownLatch(if (audioFilePath != null) 1 else 0)
 
