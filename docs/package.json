@@ -13,6 +13,7 @@
     "@codesandbox/sandpack-react": "^2.20.0",
     "@codesandbox/sandpack-themes": "^2.0.21",
     "@radix-ui/react-tabs": "^1.1.13",
+    "@vercel/analytics": "^1.6.1",
     "fumadocs-core": "16.5.2",
     "fumadocs-mdx": "14.2.7",
     "fumadocs-typescript": "^5.1.3",
