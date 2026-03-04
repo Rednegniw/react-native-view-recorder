@@ -23,7 +23,6 @@ type SessionOptions = {
 export interface Spec extends TurboModule {
   startSession(options: SessionOptions): Promise<void>;
   captureFrame(sessionId: string): Promise<void>;
-  captureSkiaFrame(sessionId: string, skiaViewTag: number): Promise<void>;
   finishSession(sessionId: string): Promise<string>;
   cancelSession(sessionId: string): Promise<void>;
   writeAudioSamples(sessionId: string, samplesBase64: string): Promise<void>;
