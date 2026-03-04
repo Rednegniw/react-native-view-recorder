@@ -33,7 +33,7 @@ public:
 
   bool renderToCanvas(const std::function<void(SkCanvas *)> &cb) override {
     if (!_surface) {
-        return false;
+      return false;
     }
 
     cb(_surface->getCanvas());
@@ -53,7 +53,6 @@ private:
   sk_sp<SkSurface> _surface;
   int _width;
   int _height;
-
 };
 
 // Cached texture cache (created once, reused across frames)
@@ -159,13 +158,10 @@ static CVMetalTextureCacheRef getTextureCache(id<MTLDevice> device) {
                                                               MTLPixelFormatBGRA8Unorm, width, height, 0, &cvTexture);
 
   if (result != kCVReturnSuccess || !cvTexture) {
-    NSString *msg = [NSString stringWithFormat:
-        @"CVMetalTextureCacheCreateTextureFromImage failed: %d", result];
+    NSString *msg = [NSString stringWithFormat:@"CVMetalTextureCacheCreateTextureFromImage failed: %d", result];
 
     if (error) {
-        *error = [NSError errorWithDomain:@"SkiaCapture"
-                                          code:7
-                                      userInfo:@{NSLocalizedDescriptionKey : msg}];
+      *error = [NSError errorWithDomain:@"SkiaCapture" code:7 userInfo:@{NSLocalizedDescriptionKey : msg}];
     }
 
     return NO;
@@ -176,9 +172,9 @@ static CVMetalTextureCacheRef getTextureCache(id<MTLDevice> device) {
     CFRelease(cvTexture);
 
     if (error) {
-        *error = [NSError errorWithDomain:@"SkiaCapture"
-                                          code:8
-                                      userInfo:@{NSLocalizedDescriptionKey : @"CVMetalTextureGetTexture failed"}];
+      *error = [NSError errorWithDomain:@"SkiaCapture"
+                                   code:8
+                               userInfo:@{NSLocalizedDescriptionKey : @"CVMetalTextureGetTexture failed"}];
     }
 
     return NO;
@@ -197,9 +193,10 @@ static CVMetalTextureCacheRef getTextureCache(id<MTLDevice> device) {
     CFRelease(cvTexture);
 
     if (error) {
-      *error = [NSError errorWithDomain:@"SkiaCapture"
-                                   code:9
-                               userInfo:@{NSLocalizedDescriptionKey : @"Failed to create SkSurface from Metal texture"}];
+      *error =
+          [NSError errorWithDomain:@"SkiaCapture"
+                              code:9
+                          userInfo:@{NSLocalizedDescriptionKey : @"Failed to create SkSurface from Metal texture"}];
     }
 
     return NO;
