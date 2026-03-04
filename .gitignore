@@ -7,6 +7,10 @@ packages/*/lib/
 # Native build artifacts
 packages/*/android/build/
 
+# Private docs
+/AUDIT.md
+/CLAUDE.md
+
 # Tool configs
 .claude/
 .vscode/
