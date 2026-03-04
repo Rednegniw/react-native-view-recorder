@@ -33,16 +33,42 @@ const features: Feature[] = [
   },
 ];
 
+const container = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.06,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const item = {
+  hidden: { opacity: 0, y: 16, filter: "blur(4px)" },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: {
+      duration: 0.5,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  },
+};
+
 export function FeatureCards() {
   return (
-    <div className="not-prose grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl">
-      {features.map((feature, index) => (
+    <motion.div
+      className="not-prose grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl"
+      variants={container}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-50px" }}
+    >
+      {features.map((feature) => (
         <motion.div
           key={feature.title}
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-50px" }}
-          transition={{ duration: 0.5, delay: index * 0.08, ease: "easeOut" }}
+          variants={item}
           className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-b from-[#b075eb]/[0.02] to-white/[0.01] p-6 transition-colors duration-300 hover:border-white/[0.12]"
         >
           {/* Top-edge highlight shimmer */}
@@ -59,6 +85,6 @@ export function FeatureCards() {
           </p>
         </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 }
