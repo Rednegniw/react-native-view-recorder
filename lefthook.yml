@@ -15,3 +15,7 @@ pre-commit:
     - name: swiftlint
       glob: "*.swift"
       run: swiftlint lint --strict --config .swiftlint.yml {staged_files}
+    - name: ktlint
+      glob: "*.kt"
+      run: ktlint --format {staged_files}
+      stage_fixed: true
