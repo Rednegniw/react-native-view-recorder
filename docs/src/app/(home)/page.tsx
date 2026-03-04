@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 
 const jsonLd = {
   "@context": "https://schema.org",
@@ -42,9 +43,12 @@ export default function HomePage() {
       <section className="flex flex-col items-center gap-8 max-w-2xl text-center">
         {/* Title */}
         <div className="flex flex-col items-center gap-5">
-          <h1 className="text-2xl sm:text-5xl font-bold tracking-tight">
-            React Native View Recorder
-          </h1>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Logo className="size-8 sm:size-12 text-fd-primary" />
+            <h1 className="text-2xl sm:text-5xl font-bold tracking-tight">
+              React Native View Recorder
+            </h1>
+          </div>
           <p className="text-lg text-fd-muted-foreground max-w-lg">
             Record any React Native view to MP4 video. Hardware-accelerated H.264/HEVC encoding with
             zero third-party binaries. No FFmpeg, no GPL.

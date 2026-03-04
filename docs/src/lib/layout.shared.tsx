@@ -1,4 +1,5 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
+import { Logo } from "@/components/logo";
 
 const npmIcon = (
   <svg role="img" aria-label="npm" viewBox="0 0 24 24" fill="currentColor">
@@ -9,7 +10,12 @@ const npmIcon = (
 export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
-      title: "React Native View Recorder",
+      title: (
+        <>
+          <Logo className="size-6 shrink-0 text-fd-primary" />
+          React Native View Recorder
+        </>
+      ),
     },
     themeSwitch: { enabled: false },
     links: [
