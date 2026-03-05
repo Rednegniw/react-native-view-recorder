@@ -2,7 +2,9 @@
 
 import { motion } from "motion/react";
 import Link from "next/link";
+import { HeroDemo } from "@/components/hero-demo";
 import { Logo } from "@/components/logo";
+import { PhoneMockup } from "@/components/video-example/PhoneMockup";
 
 const jsonLd = {
   "@context": "https://schema.org",
@@ -67,10 +69,12 @@ export default function HomePage() {
 
       {/* Hero: two-column on desktop, stacked on mobile */}
       <section className="flex flex-col lg:flex-row items-center gap-16 lg:gap-28 max-w-5xl">
-        {/* Phone mockup placeholder */}
-        <div className="flex-shrink-0 w-64 h-[520px] rounded-[3rem] border-2 border-fd-border bg-fd-muted/30 flex items-center justify-center">
-          <span className="text-fd-muted-foreground text-sm">Video coming soon</span>
-        </div>
+        {/* Phone mockup */}
+        <motion.div className="shrink-0 h-[520px] lg:h-[740px]" variants={item}>
+          <PhoneMockup>
+            <HeroDemo />
+          </PhoneMockup>
+        </motion.div>
 
         {/* Content */}
         <motion.div
