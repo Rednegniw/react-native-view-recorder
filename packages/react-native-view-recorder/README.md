@@ -18,6 +18,7 @@
 - **Hardware-accelerated**: AVAssetWriter on iOS, MediaCodec on Android
 - **Audio support**: mux audio files or generate samples per-frame via JS callback
 - **HEVC support**: H.264, H.265, and HEVC with alpha (iOS)
+- **Snapshots**: capture any view as a PNG or JPEG image (file or base64)
 - **Tiny footprint**: ~90 KB of native code, zero third-party binaries
 - **MIT licensed**: no GPL/LGPL concerns (unlike FFmpeg-based solutions)
 - **Expo config plugin**: just add to `app.json`
@@ -87,6 +88,19 @@ export default function App() {
   );
 }
 ```
+
+## Snapshot
+
+Capture a single frame as an image:
+
+```tsx
+const uri = await recorder.snapshot({
+  output: FileSystem.cacheDirectory + "photo.png",
+  format: "png",
+});
+```
+
+Works with the same `RecordingView`, no extra setup needed. Supports PNG, JPEG, custom dimensions, and base64 output.
 
 ## Skia support
 

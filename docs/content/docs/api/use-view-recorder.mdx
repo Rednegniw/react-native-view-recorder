@@ -25,6 +25,7 @@ function useViewRecorder(): ViewRecorder
 | `sessionId` | `string` | Unique session ID. Pass this as the `sessionId` prop on `<RecordingView>`. |
 | `record` | `(options: RecordOptions) => Promise<string>` | Starts recording. Returns the output file path when complete. |
 | `stop` | `() => void` | Stops an in-progress recording gracefully. The `record()` promise resolves with the output path after the current frame finishes encoding. Works for both event-driven (no `totalFrames`) and fixed-length recordings. |
+| `snapshot` | `(options: SnapshotOptions) => Promise<string>` | Captures a single frame as an image. Returns a file path or base64 string depending on `options.result`. See [SnapshotOptions](/docs/api/snapshot-options). |
 
 ## Usage
 
@@ -44,6 +45,23 @@ const outputPath = await recorder.record({
   onFrame: async ({ frameIndex }) => setFrame(frameIndex),
 });
 ```
+
+## Snapshot
+
+You can also capture a single frame as an image:
+
+```tsx
+const uri = await recorder.snapshot({
+  output: "/path/to/photo.png",
+  format: "png", // or "jpg"
+  width: 640,
+  height: 480,
+});
+```
+
+Snapshots work independently of video recording and can even be taken while a recording is in progress.
+
+See [SnapshotOptions](/docs/api/snapshot-options) for all available options.
 
 <Callout type="warn">
 Only one recording can be in progress per session at a time. Calling `record()` while a recording is already active will throw an error.

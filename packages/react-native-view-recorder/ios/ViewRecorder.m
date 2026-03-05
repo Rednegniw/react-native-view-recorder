@@ -21,6 +21,10 @@ RCT_EXTERN_METHOD(cancelSession:(NSString *)sessionId
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 
+RCT_EXTERN_METHOD(takeSnapshot:(NSDictionary *)options
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+
 RCT_EXTERN_METHOD(writeAudioSamples:(NSString *)sessionId
                   samplesBase64:(NSString *)samplesBase64
                   resolver:(RCTPromiseResolveBlock)resolve

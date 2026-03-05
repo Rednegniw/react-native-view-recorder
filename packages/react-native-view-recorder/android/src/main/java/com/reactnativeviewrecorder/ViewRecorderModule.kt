@@ -438,6 +438,123 @@ class ViewRecorderModule(
     }
   }
 
+  // ── Take snapshot ─────────────────────────────────────────────────
+
+  override fun takeSnapshot(
+    options: ReadableMap,
+    promise: Promise,
+  ) {
+    val sessionId = options.getString("sessionId")
+    if (sessionId.isNullOrEmpty()) {
+      promise.reject("INVALID_OPTIONS", "sessionId is required")
+      return
+    }
+
+    val format = options.getString("format") ?: "png"
+    val quality = if (options.hasKey("quality")) (options.getDouble("quality") * 100).toInt() else 90
+    val outputPath = options.getString("output")
+    val resultType = options.getString("result") ?: "tmpfile"
+    val requestedWidth = if (options.hasKey("width")) options.getInt("width") else 0
+    val requestedHeight = if (options.hasKey("height")) options.getInt("height") else 0
+
+    if (resultType == "tmpfile" && outputPath.isNullOrEmpty()) {
+      promise.reject("INVALID_OPTIONS", "output is required when result is 'tmpfile'")
+      return
+    }
+
+    val activity = currentActivity
+    if (activity == null) {
+      promise.reject("NO_ACTIVITY", "No current activity available")
+      return
+    }
+
+    val view = RecordingViewNative.registry[sessionId]?.get()
+    if (view == null) {
+      promise.reject("VIEW_NOT_FOUND", "RecordingView detached for sessionId: $sessionId")
+      return
+    }
+
+    activity.runOnUiThread {
+      if (view.width <= 0 || view.height <= 0) {
+        promise.reject("VIEW_NOT_VISIBLE", "RecordingView has zero dimensions")
+        return@runOnUiThread
+      }
+
+      val width = if (requestedWidth > 0) requestedWidth else view.width
+      val height = if (requestedHeight > 0) requestedHeight else view.height
+
+      val compressFormat = if (format == "jpg") Bitmap.CompressFormat.JPEG else Bitmap.CompressFormat.PNG
+      val compressQuality = if (format == "jpg") quality else 100
+
+      val location = IntArray(2)
+      view.getLocationInWindow(location)
+
+      val fitsInWindow =
+        location[0] >= 0 &&
+          location[1] >= 0 &&
+          location[0] + view.width <= activity.window.decorView.width &&
+          location[1] + view.height <= activity.window.decorView.height
+
+      val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+
+      fun saveResult(bmp: Bitmap) {
+        try {
+          if (resultType == "base64") {
+            val stream = java.io.ByteArrayOutputStream()
+            bmp.compress(compressFormat, compressQuality, stream)
+            val base64 = android.util.Base64.encodeToString(stream.toByteArray(), android.util.Base64.NO_WRAP)
+            bmp.recycle()
+            promise.resolve(base64)
+          } else {
+            val file = File(outputPath!!)
+            file.parentFile?.mkdirs()
+            java.io.FileOutputStream(file).use { fos ->
+              bmp.compress(compressFormat, compressQuality, fos)
+            }
+            bmp.recycle()
+            promise.resolve(outputPath)
+          }
+        } catch (e: Exception) {
+          bmp.recycle()
+          promise.reject("WRITE_ERROR", "Failed to write snapshot: ${e.message}", e)
+        }
+      }
+
+      if (fitsInWindow) {
+        val rect =
+          Rect(
+            location[0],
+            location[1],
+            location[0] + view.width,
+            location[1] + view.height,
+          )
+
+        PixelCopy.request(
+          activity.window,
+          rect,
+          bitmap,
+          { result ->
+            if (result != PixelCopy.SUCCESS) {
+              bitmap.recycle()
+              promise.reject("PIXEL_COPY_FAILED", "PixelCopy failed with result: $result")
+              return@request
+            }
+            saveResult(bitmap)
+          },
+          Handler(android.os.Looper.getMainLooper()),
+        )
+      } else {
+        val canvas = android.graphics.Canvas(bitmap)
+        canvas.drawColor(android.graphics.Color.TRANSPARENT, android.graphics.PorterDuff.Mode.CLEAR)
+        val scaleX = bitmap.width.toFloat() / view.width.toFloat()
+        val scaleY = bitmap.height.toFloat() / view.height.toFloat()
+        canvas.scale(scaleX, scaleY)
+        view.draw(canvas)
+        saveResult(bitmap)
+      }
+    }
+  }
+
   // ── Finish session ────────────────────────────────────────────────
 
   override fun finishSession(

@@ -658,6 +658,74 @@ public final class ViewRecorder: RCTEventEmitter {
     }
   }
 
+  // MARK: - takeSnapshot
+
+  @objc(takeSnapshot:resolver:rejecter:)
+  func takeSnapshot(
+    _ options: NSDictionary,
+    resolver resolve: @escaping RCTPromiseResolveBlock,
+    rejecter reject: @escaping RCTPromiseRejectBlock
+  ) {
+    guard let sessionId = options["sessionId"] as? String else {
+      reject("invalid_options", "sessionId is required", nil)
+      return
+    }
+
+    let format = (options["format"] as? String) ?? "png"
+    let quality = (options["quality"] as? Double) ?? 0.9
+    let outputPath = options["output"] as? String
+    let resultType = (options["result"] as? String) ?? "tmpfile"
+    let requestedWidth = options["width"] as? Int
+    let requestedHeight = options["height"] as? Int
+
+    if resultType == "tmpfile" && (outputPath == nil || outputPath!.isEmpty) {
+      reject("invalid_options", "output is required when result is 'tmpfile'", nil)
+      return
+    }
+
+    DispatchQueue.main.async {
+      guard let view = RecordingViewNative.view(forSession: sessionId) else {
+        reject("view_not_found", "No RecordingView found for sessionId: \(sessionId)", nil)
+        return
+      }
+
+      let scale = UIScreen.main.scale
+      let width = requestedWidth ?? Int(view.bounds.width * scale)
+      let height = requestedHeight ?? Int(view.bounds.height * scale)
+
+      let renderer = UIGraphicsImageRenderer(size: CGSize(width: width, height: height))
+
+      let drawAction: (UIGraphicsImageRendererContext) -> Void = { ctx in
+        ctx.cgContext.scaleBy(
+          x: CGFloat(width) / view.bounds.width,
+          y: CGFloat(height) / view.bounds.height
+        )
+        view.drawHierarchy(in: view.bounds, afterScreenUpdates: true)
+      }
+
+      let imageData: Data
+      if format == "jpg" {
+        imageData = renderer.jpegData(withCompressionQuality: CGFloat(quality), actions: drawAction)
+      } else {
+        imageData = renderer.pngData(actions: drawAction)
+      }
+
+      // Dispatch file I/O and base64 encoding off the main thread
+      DispatchQueue.global(qos: .userInitiated).async {
+        if resultType == "base64" {
+          resolve(imageData.base64EncodedString())
+        } else {
+          do {
+            try imageData.write(to: URL(fileURLWithPath: outputPath!))
+            resolve(outputPath!)
+          } catch {
+            reject("write_error", "Failed to write snapshot: \(error.localizedDescription)", error)
+          }
+        }
+      }
+    }
+  }
+
   // MARK: - writeAudioSamples
 
   @objc(writeAudioSamples:samplesBase64:resolver:rejecter:)

@@ -7,6 +7,9 @@ import type {
   FrameInfo,
   RecordOptions,
   RecordProgress,
+  SnapshotFormat,
+  SnapshotOptions,
+  SnapshotResult,
   VideoCodec,
   ViewRecorder,
 } from "../src/index";
@@ -37,6 +40,13 @@ describe("public API exports", () => {
       sessionId: "test",
       record: async () => "/out.mp4",
       stop: () => {},
+      snapshot: async () => "/out.png",
+    };
+    const _snapshotFormat: SnapshotFormat = "png";
+    const _snapshotResult: SnapshotResult = "tmpfile";
+    const _snapshotOptions: SnapshotOptions = {
+      output: "/out.png",
+      format: "png",
     };
 
     expect(_frameInfo).toBeDefined();
@@ -44,6 +54,13 @@ describe("public API exports", () => {
     expect(_codec).toBeDefined();
     expect(_options).toBeDefined();
     expect(_recorder).toBeDefined();
+    expect(_snapshotFormat).toBeDefined();
+    expect(_snapshotResult).toBeDefined();
+    expect(_snapshotOptions).toBeDefined();
+  });
+
+  test("exports takeSnapshot as a function", () => {
+    expect(typeof lib.takeSnapshot).toBe("function");
   });
 
   test("totalFrames narrows callback types", () => {

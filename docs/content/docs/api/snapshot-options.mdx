@@ -1,0 +1,47 @@
+---
+title: SnapshotOptions
+description: Configuration options for capturing a view as an image
+full: true
+---
+
+`SnapshotOptions` is the configuration object passed to `recorder.snapshot()` or `takeSnapshot()`. It controls the output format, size, and result type.
+
+## Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `output` | `string` | - | Absolute path for the output image file. Required when `result` is `"tmpfile"`. |
+| `format` | [`SnapshotFormat`](#snapshotformat) | `"png"` | Image format. PNG is lossless; JPG is lossy but smaller. |
+| `quality` | `number` | `0.9` | Compression quality from 0.0 (smallest) to 1.0 (best). Only applies to `"jpg"` format. |
+| `width` | `number` | View's pixel width | Output image width in pixels. |
+| `height` | `number` | View's pixel height | Output image height in pixels. |
+| `result` | [`SnapshotResult`](#snapshotresult) | `"tmpfile"` | Output type. `"tmpfile"` writes to disk and returns the file path. `"base64"` returns the image data as a base64-encoded string. |
+
+## Types
+
+### SnapshotFormat
+
+```tsx
+type SnapshotFormat = "png" | "jpg";
+```
+
+### SnapshotResult
+
+```tsx
+type SnapshotResult = "tmpfile" | "base64";
+```
+
+## Standalone function
+
+If you need to take a snapshot without the hook, use the standalone `takeSnapshot` function:
+
+```tsx
+import { takeSnapshot } from "react-native-view-recorder";
+
+const uri = await takeSnapshot(sessionId, {
+  output: "/path/to/photo.png",
+  format: "png",
+});
+```
+
+This is useful when you have the `sessionId` but not the hook handle, for example in a utility function or class component.

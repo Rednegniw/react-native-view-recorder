@@ -1,0 +1,84 @@
+---
+title: Snapshot
+description: Capture a React Native view as a PNG or JPEG image
+full: true
+---
+
+Use `recorder.snapshot()` to capture a single frame from a `RecordingView` as an image. This works with any view content, including Skia canvases.
+
+## Basic example
+
+```tsx
+import { useCallback, useState } from "react";
+import { Button, Image, View } from "react-native";
+import * as FileSystem from "expo-file-system";
+import { RecordingView, useViewRecorder } from "react-native-view-recorder";
+
+export default function SnapshotExample() {
+  const recorder = useViewRecorder();
+  const [imageUri, setImageUri] = useState<string | null>(null);
+
+  const handleSnapshot = useCallback(async () => {
+    const uri = await recorder.snapshot({
+      output: FileSystem.cacheDirectory + "snapshot.png",
+      format: "png",
+    });
+    setImageUri(uri);
+  }, [recorder]);
+
+  return (
+    <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: 16 }}>
+      <RecordingView
+        sessionId={recorder.sessionId}
+        style={{ width: 300, height: 200, backgroundColor: "#111" }}
+      >
+        {/* Your content here */}
+      </RecordingView>
+
+      <Button title="Take Snapshot" onPress={handleSnapshot} />
+
+      {imageUri && (
+        <Image
+          source={{ uri: `file://${imageUri}` }}
+          style={{ width: 300, height: 200 }}
+          resizeMode="contain"
+        />
+      )}
+    </View>
+  );
+}
+```
+
+## Base64 output
+
+To get the image as a base64 string instead of a file:
+
+```tsx
+const base64 = await recorder.snapshot({
+  format: "jpg",
+  quality: 0.8,
+  result: "base64",
+});
+// Use as data URI: `data:image/jpeg;base64,${base64}`
+```
+
+## Custom dimensions
+
+Specify `width` and `height` to scale the output:
+
+```tsx
+const uri = await recorder.snapshot({
+  output: "/path/to/thumbnail.jpg",
+  format: "jpg",
+  quality: 0.7,
+  width: 320,
+  height: 240,
+});
+```
+
+## Notes
+
+- Snapshots work independently of video recording. No `startSession`/`finishSession` is needed.
+- You can take a snapshot even while a recording is in progress.
+- The same `RecordingView` is used for both recording and snapshots.
+- Skia canvases are fully supported via `drawHierarchy` (iOS) and `PixelCopy` (Android).

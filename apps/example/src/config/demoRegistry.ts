@@ -124,6 +124,19 @@ export const DEMO_SECTIONS: DemoSection[] = [
     ],
   },
   {
+    title: "Snapshot",
+    data: [
+      {
+        key: "snapshot",
+        title: "Take a Snapshot",
+        description: "Capture a single frame as a PNG or JPEG image.",
+        get Component() {
+          return require("../demos/SnapshotDemo").SnapshotDemo;
+        },
+      },
+    ],
+  },
+  {
     title: "Edge Cases",
     data: [
       {
