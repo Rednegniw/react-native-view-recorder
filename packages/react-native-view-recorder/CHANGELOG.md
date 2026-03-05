@@ -1,5 +1,11 @@
 # react-native-view-recorder
 
+## 0.3.0
+
+### Minor Changes
+
+- [`8b4e503`](https://github.com/Rednegniw/react-native-view-recorder/commit/8b4e5039d5cde83ff6bb0381bbe441639608c227) Thanks [@Rednegniw](https://github.com/Rednegniw)! - Add snapshot/photo capture: `recorder.snapshot()` captures a single frame from a RecordingView as a PNG or JPEG image. Supports file output and base64, custom dimensions, and works independently of video recording. Also available as a standalone `takeSnapshot()` function.
+
 ## 0.2.0
 
 ### Minor Changes
