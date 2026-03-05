@@ -61,3 +61,82 @@
 @utility animate-tab-slide-in {
   animation: tab-slide-in 0.2s ease-out;
 }
+
+@keyframes wave-drift-1 {
+  0%,
+  100% {
+    transform: translate(-20px, 5px);
+  }
+  50% {
+    transform: translate(25px, -10px);
+  }
+}
+
+@keyframes wave-drift-2 {
+  0%,
+  100% {
+    transform: translate(15px, 3px) scaleX(1.03);
+  }
+  50% {
+    transform: translate(-20px, -8px) scaleX(0.97);
+  }
+}
+
+@keyframes wave-drift-3 {
+  0%,
+  100% {
+    transform: translate(-15px, 8px);
+  }
+  50% {
+    transform: translate(20px, -12px);
+  }
+}
+
+@keyframes wave-drift-4 {
+  0%,
+  100% {
+    transform: translate(18px, -5px);
+  }
+  50% {
+    transform: translate(-22px, 8px);
+  }
+}
+
+@keyframes wave-drift-5 {
+  0%,
+  100% {
+    transform: translate(-12px, 6px);
+  }
+  50% {
+    transform: translate(15px, -8px);
+  }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+@utility animate-ripple {
+  animation: ripple 0.6s ease-out forwards;
+}
+
+@keyframes rec-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@utility animate-rec-pulse {
+  animation: rec-pulse 1.2s ease-in-out infinite;
+}
