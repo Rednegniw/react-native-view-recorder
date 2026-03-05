@@ -167,6 +167,64 @@ export interface ViewRecorder {
    * Works for both event-driven (no totalFrames) and fixed-length recordings.
    */
   stop: () => void;
+
+  /**
+   * Capture a single frame as an image.
+   * Returns a file path or base64 string depending on `options.result`.
+   */
+  snapshot: (options: SnapshotOptions) => Promise<string>;
+}
+
+// ── Snapshot types ────────────────────────────────────────────────
+
+/** Image format for snapshots. */
+export type SnapshotFormat = "png" | "jpg";
+
+/** Output result type for snapshots. */
+export type SnapshotResult = "tmpfile" | "base64";
+
+/**
+ * Options for taking a snapshot of a RecordingView.
+ */
+export type SnapshotOptions = {
+  /** Absolute path for the output image file. Required when result is "tmpfile". */
+  output?: string;
+  /** Image format. Defaults to "png". */
+  format?: SnapshotFormat;
+  /** Compression quality from 0.0 (smallest) to 1.0 (best). Only applies to "jpg". Defaults to 0.9. */
+  quality?: number;
+  /** Output width in pixels. Defaults to the RecordingView's rendered pixel width. */
+  width?: number;
+  /** Output height in pixels. Defaults to the RecordingView's rendered pixel height. */
+  height?: number;
+  /** Output type. "tmpfile" returns a file path, "base64" returns a base64 string. Defaults to "tmpfile". */
+  result?: SnapshotResult;
+};
+
+// ── Snapshot function ─────────────────────────────────────────────
+
+/**
+ * Capture a snapshot of a RecordingView as an image.
+ * Returns a file path or base64 string depending on `options.result`.
+ */
+export async function takeSnapshot(sessionId: string, options: SnapshotOptions): Promise<string> {
+  if (!NativeViewRecorder) throw new Error(LINKING_ERROR);
+
+  const result = options.result ?? "tmpfile";
+
+  if (result === "tmpfile" && !options.output) {
+    throw new Error("output is required when result is 'tmpfile'.");
+  }
+
+  return NativeViewRecorder.takeSnapshot({
+    sessionId,
+    output: options.output,
+    format: options.format,
+    quality: options.quality,
+    width: options.width,
+    height: options.height,
+    result,
+  });
 }
 
 // ── AbortError ────────────────────────────────────────────────────
@@ -328,6 +386,11 @@ export function useViewRecorder(): ViewRecorder {
     stopRef.current = true;
   }, []);
 
+  const snapshot = useCallback(
+    (options: SnapshotOptions) => takeSnapshot(sessionIdRef.current, options),
+    [],
+  );
+
   const record = useCallback(async (options: RecordOptions): Promise<string> => {
     if (!NativeViewRecorder) throw new Error(LINKING_ERROR);
     if (isRecordingRef.current) throw new Error("A recording is already in progress.");
@@ -392,5 +455,8 @@ export function useViewRecorder(): ViewRecorder {
     }
   }, []);
 
-  return useMemo(() => ({ sessionId: sessionIdRef.current, record, stop }), [record, stop]);
+  return useMemo(
+    () => ({ sessionId: sessionIdRef.current, record, stop, snapshot }),
+    [record, stop, snapshot],
+  );
 }
