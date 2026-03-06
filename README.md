@@ -11,6 +11,10 @@
   <a href="https://github.com/Rednegniw/react-native-view-recorder/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/react-native-view-recorder" alt="license" /></a>
 </p>
 
+<div align="center">
+  <video src="https://github.com/user-attachments/assets/69095d1e-0855-441e-9afb-5b98b39fd100" width="300"></video>
+</div>
+
 ## Features
 
 - **View-level capture**: record a specific view, not the entire screen
