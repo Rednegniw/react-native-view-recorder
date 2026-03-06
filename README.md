@@ -1,7 +1,7 @@
 <h1 align="center">React Native View Recorder</h1>
 
 <p align="center" style="font-size: 1.2em;">
-  Record any React Native view to MP4 video. No FFmpeg, no GPL.
+  Capture any React Native View to a video or an image. Add your own audio. Ideal for creating shareable content in your apps.
 </p>
 
 <p align="center">
