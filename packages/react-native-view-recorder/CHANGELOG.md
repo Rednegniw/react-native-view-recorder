@@ -1,5 +1,11 @@
 # react-native-view-recorder
 
+## 0.3.1
+
+### Patch Changes
+
+- [`7bfbf17`](https://github.com/Rednegniw/react-native-view-recorder/commit/7bfbf1778464282b1f456ea7d2cd054e94d10e82) Thanks [@Rednegniw](https://github.com/Rednegniw)! - Add demo video to README
+
 ## 0.3.0
 
 ### Minor Changes
