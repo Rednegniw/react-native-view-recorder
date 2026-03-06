@@ -1,6 +1,6 @@
 {
   "name": "react-native-view-recorder",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Record any React Native view to MP4 video. Captures views (including Skia canvases) frame-by-frame using native APIs and encodes with hardware-accelerated H.264/HEVC. No FFmpeg, no GPL.",
   "source": "./src/index.ts",
   "main": "./lib/module/index.js",
