@@ -70,7 +70,7 @@ export default function HomePage() {
       {/* Hero: two-column on desktop, stacked on mobile */}
       <section className="flex flex-col lg:flex-row items-center gap-16 lg:gap-28 max-w-5xl">
         {/* Phone mockup */}
-        <motion.div className="shrink-0 h-[520px] lg:h-[740px]" variants={item}>
+        <motion.div className="shrink-0 h-130 lg:h-185" variants={item}>
           <PhoneMockup>
             <HeroDemo />
           </PhoneMockup>
