@@ -1,14 +1,35 @@
+"use client";
+
 import Image from "next/image";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
+
+const REFERENCE_WIDTH = 358;
+const REFERENCE_HEIGHT = 740;
 
 interface PhoneMockupProps {
   children: ReactNode;
 }
 
 export function PhoneMockup({ children }: PhoneMockupProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setScale(entry.contentRect.height / REFERENCE_HEIGHT);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="relative w-fit h-full" style={{ clipPath: "inset(0 round 18.46% / 9.20%)" }}>
-      {/* Frame image: establishes dimensions, sits on top */}
+    <div
+      ref={containerRef}
+      className="relative w-fit h-full"
+      style={{ clipPath: "inset(0 round 18.46% / 9.20%)" }}
+    >
       <Image
         src="/iphone-mockup.png"
         alt=""
@@ -20,8 +41,18 @@ export function PhoneMockup({ children }: PhoneMockupProps) {
         priority
       />
 
-      {/* Screen content, positioned behind the frame */}
-      <div className="absolute inset-0 z-0 bg-black">{children}</div>
+      <div className="absolute inset-0 z-0 bg-black overflow-hidden">
+        <div
+          style={{
+            width: REFERENCE_WIDTH,
+            height: REFERENCE_HEIGHT,
+            transform: `scale(${scale})`,
+            transformOrigin: "top left",
+          }}
+        >
+          {children}
+        </div>
+      </div>
     </div>
   );
 }
