@@ -5,7 +5,6 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "plugins": [
-      "react-native-view-recorder",
       [
         "expo-media-library",
         {

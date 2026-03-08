@@ -25,7 +25,6 @@
 - **Snapshots**: capture any view as a PNG or JPEG image (file or base64)
 - **Tiny footprint**: ~90 KB of native code, zero third-party binaries
 - **MIT licensed**: no GPL/LGPL concerns (unlike FFmpeg-based solutions)
-- **Expo config plugin**: just add to `app.json`
 - **New Architecture**: Fabric native component + TurboModule
 
 ## Documentation
@@ -43,16 +42,6 @@ npm install react-native-view-recorder
 
 # bun
 bun add react-native-view-recorder
-```
-
-For Expo, add the config plugin to your `app.json`:
-
-```json
-{
-  "expo": {
-    "plugins": ["react-native-view-recorder"]
-  }
-}
 ```
 
 > Expo Go does not support native modules. You need a [development build](https://docs.expo.dev/develop/development-builds/introduction/).
