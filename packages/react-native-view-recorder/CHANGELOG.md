@@ -1,5 +1,11 @@
 # react-native-view-recorder
 
+## 0.4.0
+
+### Minor Changes
+
+- [`50ca48c`](https://github.com/Rednegniw/react-native-view-recorder/commit/50ca48ceb5d1117be9b2e12224ba2c5622f1898f) Thanks [@Rednegniw](https://github.com/Rednegniw)! - Remove no-op Expo config plugin. The library does not require any native project modifications beyond autolinking, so the plugin was unnecessary. If you have `"react-native-view-recorder"` in your app.json plugins array, simply remove it.
+
 ## 0.3.1
 
 ### Patch Changes
