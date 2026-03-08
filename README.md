@@ -83,21 +83,22 @@ export default function App() {
 
 ## Skia support
 
-Record Skia canvases using `useSkiaViewRecorder` and `SkiaRecordingView`:
+Record Skia canvases with the same `RecordingView` and `useViewRecorder`:
 
 ```tsx
-import { SkiaRecordingView, useSkiaViewRecorder } from "react-native-view-recorder";
-import { Canvas, Circle } from "@shopify/react-native-skia";
+import { Canvas, Circle, Fill } from "@shopify/react-native-skia";
+import { RecordingView, useViewRecorder } from "react-native-view-recorder";
 
 function SkiaExample() {
-  const recorder = useSkiaViewRecorder();
+  const recorder = useViewRecorder();
 
   return (
-    <SkiaRecordingView sessionId={recorder.sessionId} viewRef={recorder.viewRef}>
-      <Canvas style={{ width: 300, height: 300 }}>
+    <RecordingView sessionId={recorder.sessionId} style={{ width: 300, height: 300 }}>
+      <Canvas style={{ flex: 1 }}>
+        <Fill color="black" />
         <Circle cx={150} cy={150} r={100} color="cyan" />
       </Canvas>
-    </SkiaRecordingView>
+    </RecordingView>
   );
 }
 ```
