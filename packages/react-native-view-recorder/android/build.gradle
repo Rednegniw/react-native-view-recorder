@@ -46,7 +46,7 @@ react {
 def IS_NEW_ARCHITECTURE_ENABLED = isNewArchitectureEnabled()
 
 android {
-    compileSdk = safeExtGet('compileSdkVersion', 34)
+    compileSdk = safeExtGet('compileSdkVersion', 35)
 
     buildFeatures {
         buildConfig = true
@@ -54,7 +54,7 @@ android {
 
     defaultConfig {
         minSdk = safeExtGet('minSdkVersion', 26)
-        targetSdk = safeExtGet('targetSdkVersion', 34)
+        targetSdk = safeExtGet('targetSdkVersion', 35)
 
         versionCode 1
         versionName "1.0.0"

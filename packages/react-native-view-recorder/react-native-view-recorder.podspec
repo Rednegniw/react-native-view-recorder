@@ -16,7 +16,7 @@ Pod::Spec.new do |s|
   s.source_files = 'ios/**/*.{h,m,mm,swift}'
   s.exclude_files = 'ios/ObjCBridge/**/*', 'ios/ViewRecorder-Bridging-Header.h'
   s.header_dir = 'react_native_view_recorder'
-  s.swift_version = '5.0'
+  s.swift_version = '5.9'
 
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',

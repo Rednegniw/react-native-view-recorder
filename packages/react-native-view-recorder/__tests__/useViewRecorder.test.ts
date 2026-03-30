@@ -1,7 +1,6 @@
 const mockNative = {
   startSession: jest.fn().mockResolvedValue(undefined),
   captureFrame: jest.fn().mockResolvedValue(undefined),
-  captureSkiaFrame: jest.fn().mockResolvedValue(undefined),
   finishSession: jest.fn().mockResolvedValue("/output.mp4"),
   cancelSession: jest.fn().mockResolvedValue(undefined),
   writeAudioSamples: jest.fn().mockResolvedValue(undefined),
