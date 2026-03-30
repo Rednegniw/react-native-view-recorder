@@ -1,5 +1,11 @@
 # react-native-view-recorder
 
+## 0.4.1
+
+### Patch Changes
+
+- [`baa57fc`](https://github.com/Rednegniw/react-native-view-recorder/commit/baa57fc991557701dc29fca195f3706b1f76b3f2) Thanks [@Rednegniw](https://github.com/Rednegniw)! - Bump Android compileSdk/targetSdk to 35, Swift version to 5.9, fix tsconfig outDir mismatch, remove stale test mock
+
 ## 0.4.0
 
 ### Minor Changes
