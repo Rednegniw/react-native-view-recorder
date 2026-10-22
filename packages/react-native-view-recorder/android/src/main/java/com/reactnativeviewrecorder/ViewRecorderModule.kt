@@ -359,7 +359,7 @@ class ViewRecorderModule(
       return
     }
 
-    val activity = currentActivity
+    val activity = reactApplicationContext.currentActivity
     if (activity == null) {
       promise.reject("NO_ACTIVITY", "No current activity available")
       return
@@ -462,7 +462,7 @@ class ViewRecorderModule(
       return
     }
 
-    val activity = currentActivity
+    val activity = reactApplicationContext.currentActivity
     if (activity == null) {
       promise.reject("NO_ACTIVITY", "No current activity available")
       return
